@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaAI Hub - Dashboard</title>
-    <!-- Yeh line hamari CSS design ko connect kar rahi hai -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,6 +14,18 @@
     </header>
 
     <main>
+        <!-- YAHAN HUMNE NAYA SEARCH BOX AUR BUTTON ADD KIYA HAI -->
+        <section>
+            <h2>Drug Search (Beta)</h2>
+            <p>Kisi bhi medicine ka naam type karein (Jaise: Paracetamol):</p>
+            
+            <input type="text" id="drugInput" placeholder="Drug ka naam likhein..." style="padding: 8px; width: 200px;">
+            <button id="searchBtn" style="padding: 8px 15px; background-color: #0056b3; color: white; border: none; cursor: pointer;">Search</button>
+            
+            <!-- Result yahan dikhega baad mein -->
+            <p id="resultText" style="color: green; margin-top: 15px; font-weight: bold;"></p>
+        </section>
+
         <section>
             <h2>Modules</h2>
             <ul>
@@ -35,7 +46,6 @@
         <p>Developed by Athrav Sahu | B.Pharm + AI Developer</p>
     </footer>
 
-    <!-- Yeh line hamare JavaScript brain ko connect kar rahi hai -->
     <script src="app.js"></script>
 </body>
 </html>
