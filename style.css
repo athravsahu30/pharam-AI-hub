@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaAI Hub - Dashboard</title>
+</head>
+<body>
+
+    <header>
+        <h1>PharmaAI Hub</h1>
+        <p>Aapka AI-Powered Pharmaceutical Learning Dashboard</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>Modules</h2>
+            <ul>
+                <li><strong>Drug Explorer:</strong> Search and learn about different drugs.</li>
+                <li><strong>ADR Learning:</strong> Understand Adverse Drug Reactions.</li>
+                <li><strong>Pharmacokinetics:</strong> Learn how the body processes drugs.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Future AI Features (Coming Soon)</h2>
+            <p>PharmaRAG - AI Research Assistant & Analytics.</p>
+        </section>
+    </main>
+
+    <footer>
+        <hr>
+        <p>Developed by Athrav Sahu | B.Pharm + AI Developer</p>
+    </footer>
+
+</body>
+</html>
