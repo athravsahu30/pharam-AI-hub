@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharma AI Assistant</title>
+    <style>
+        body { font-family: 'Georgia', serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .chat-container { width: 100%; max-width: 500px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; }
+        .chat-header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        .chat-box { height: 400px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #e9ecef; }
+        .message { padding: 10px 15px; border-radius: 20px; max-width: 80%; font-size: 14px; }
+        .bot-msg { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .user-msg { background: #0056b3; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
+        button { background: #0056b3; color: white; border: none; padding: 10px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-header">Pharma AI Chatbot 🤖</div>
+        
+        <div class="chat-box" id="chatBox">
+            <div class="message bot-msg">Hello! I am your Pharma Assistant. Ask me anything about medicines or pharmacology.</div>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Ask about a drug (e.g., Amoxicillin)...">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+</body>
+</html>
