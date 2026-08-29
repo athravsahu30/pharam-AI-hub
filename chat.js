@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let userInput = document.getElementById("userInput");
     let chatBox = document.getElementById("chatBox");
 
-    // Yahan apni secret API key paste kariye
+    // 👇 YAHAN APNI ASLI API KEY DAALIYE 👇
     const API_KEY = "AQ.Ab8RN6KBh_4UfahIjNjz2RLyMo2vsu3IvvIAYhQkfiKWWxVBzg"; 
 
     function addMessage(text, sender) {
@@ -15,22 +15,16 @@ document.addEventListener("DOMContentLoaded", function() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
-    const thinkingMessages = [
-        "Let me check my database for that...",
-        "Analyzing your query...",
-        "Pulling up the latest pharmacological data...",
-        "Just a second, retrieving information..."
-    ];
-
     sendBtn.addEventListener("click", async function() {
         let text = userInput.value.trim();
         if (text === "") return;
 
+        // User message show karna
         addMessage(text, "user");
         userInput.value = "";
 
-        let randomThinking = thinkingMessages[Math.floor(Math.random() * thinkingMessages.length)];
-        addMessage(randomThinking, "bot");
+        // Loading message show karna
+        addMessage("Analyzing your query... ⏳", "bot");
 
         // Asli AI API Call (Google Gemini)
         try {
@@ -40,8 +34,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            // Yahan humne AI ko ek expert persona diya hai
-                            text: "You are an expert B.Pharm professional and AI Pharma Assistant. Answer the following query strictly related to medicines, pharmacology, or healthcare. Keep it concise, accurate, and easy to understand. Format your response with basic HTML like <strong> for bold if needed, but do not use markdown like **. Query: " + text
+                            text: "You are an expert B.Pharm professional and AI Pharma Assistant. Answer the following query strictly related to medicines, pharmacology, or healthcare. Keep it concise, accurate, and easy to understand. Format your response with basic HTML like <b> for bold if needed. Query: " + text
                         }]
                     }]
                 })
@@ -52,6 +45,10 @@ document.addEventListener("DOMContentLoaded", function() {
             if (data.candidates && data.candidates[0].content.parts[0].text) {
                 chatBox.lastChild.remove(); // Loading message hatana
                 let aiResponse = data.candidates[0].content.parts[0].text;
+                
+                // Markdown ko hatane ka chhota sa code taaki text clean dikhe
+                aiResponse = aiResponse.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>'); 
+                
                 addMessage(aiResponse, "bot");
             } else {
                 throw new Error("Invalid response");
@@ -59,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         } catch (error) {
             chatBox.lastChild.remove();
-            addMessage("❌ Sorry, server connect nahi ho pa raha. Please apni API Key check karein ya thodi der mein try karein.", "bot");
+            addMessage("❌ Sorry, AI server se connect nahi ho pa raha. API Key check karein ya refresh karein.", "bot");
         }
     });
 });
