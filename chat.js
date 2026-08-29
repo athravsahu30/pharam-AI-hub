@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let chatBox = document.getElementById("chatBox");
 
     // 👇 YAHAN APNI ASLI API KEY DAALIYE 👇
-    const API_KEY = "AQ.Ab8RN6KBh_4UfahIjNjz2RLyMo2vsu3IvvIAYhQkfiKWWxVBzg"; 
+    const API_KEY = "AQ.Ab8RN6JO529WapiUYb8yt0ks3wu4MHyjndVIxULAPQtHpINLSg"; 
 
     function addMessage(text, sender) {
         let msgDiv = document.createElement("div");
