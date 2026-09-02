@@ -1,37 +1,558 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PharmaAI Hub - Dashboard</title>
-</head>
-<body>
+/* ==========================================================
+   PharmaAI Hub — style.css
+   NOTE: This is a functional skeleton only (bug-fix pass).
+   It covers every class used in index.html so the page
+   renders and lays out correctly. Visual design/theme
+   comes in the next pass.
+   ========================================================== */
 
-    <header>
-        <h1>PharmaAI Hub</h1>
-        <p>Aapka AI-Powered Pharmaceutical Learning Dashboard</p>
-    </header>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-    <main>
-        <section>
-            <h2>Modules</h2>
-            <ul>
-                <li><strong>Drug Explorer:</strong> Search and learn about different drugs.</li>
-                <li><strong>ADR Learning:</strong> Understand Adverse Drug Reactions.</li>
-                <li><strong>Pharmacokinetics:</strong> Learn how the body processes drugs.</li>
-            </ul>
-        </section>
+body {
+  font-family: 'Inter', sans-serif;
+  display: flex;
+  min-height: 100vh;
+}
 
-        <section>
-            <h2>Future AI Features (Coming Soon)</h2>
-            <p>PharmaRAG - AI Research Assistant & Analytics.</p>
-        </section>
-    </main>
+a {
+  text-decoration: none;
+  color: inherit;
+}
 
-    <footer>
-        <hr>
-        <p>Developed by Athrav Sahu | B.Pharm + AI Developer</p>
-    </footer>
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
 
-</body>
-</html>
+/* ===================== SIDEBAR ===================== */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.brand-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.navigation {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-label {
+  font-size: 11px;
+  margin: 16px 0 6px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.nav-icon {
+  width: 18px;
+  text-align: center;
+}
+
+.nav-item .coming {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 20px;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.developer-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.developer-avatar,
+.profile-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ===================== MAIN CONTENT ===================== */
+.main-content {
+  flex: 1;
+  padding: 24px 32px;
+  overflow-y: auto;
+}
+
+/* ===================== TOPBAR ===================== */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.breadcrumb {
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-info span {
+  font-size: 11px;
+}
+
+/* ===================== HERO ===================== */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.hero-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.hero-content h2 {
+  font-size: 34px;
+  line-height: 1.2;
+  margin-bottom: 14px;
+}
+
+.hero-content p {
+  font-size: 15px;
+  margin-bottom: 22px;
+  max-width: 46ch;
+}
+
+/* --- Drug Search --- */
+.search-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.search-icon {
+  flex-shrink: 0;
+}
+
+.search-container input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  padding: 10px 0;
+  font-family: inherit;
+}
+
+.search-container button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.search-result {
+  font-size: 13px;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.popular-searches {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+
+.popular-searches button {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+/* --- Hero visual --- */
+.hero-visual {
+  position: relative;
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  z-index: 0;
+}
+
+.orb-one {
+  width: 160px;
+  height: 160px;
+  top: -20px;
+  left: -20px;
+}
+
+.orb-two {
+  width: 120px;
+  height: 120px;
+  bottom: -10px;
+  right: -10px;
+}
+
+.molecule-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.molecule-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-bottom: 14px;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.molecule-symbol {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.molecule-card h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.molecule-card p {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.molecule-lines span {
+  display: block;
+  height: 6px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+/* ===================== STATS GRID ===================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 14px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-card span {
+  display: block;
+  font-size: 12px;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 20px;
+  margin: 2px 0;
+}
+
+.stat-card small {
+  font-size: 11px;
+}
+
+/* ===================== SECTION HEADING ===================== */
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.section-heading h2 {
+  font-size: 20px;
+  margin: 4px 0;
+}
+
+.section-heading p {
+  font-size: 13px;
+}
+
+.view-all {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ===================== MODULES GRID ===================== */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.module-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border-radius: 14px;
+}
+
+.module-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.module-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.module-tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.module-content h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.module-content p {
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.module-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-top: auto;
+}
+
+.coming-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+/* ===================== AI BANNER ===================== */
+.ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 28px;
+  border-radius: 16px;
+  margin-bottom: 32px;
+}
+
+.ai-banner-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.ai-banner-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ai-banner-content span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.ai-banner-content h2 {
+  font-size: 22px;
+  margin: 8px 0;
+}
+
+.ai-banner-content p {
+  font-size: 13px;
+}
+
+.ai-button {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ===================== FOOTER ===================== */
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 20px;
+  font-size: 13px;
+}
+
+/* ===================== RESPONSIVE ===================== */
+@media (max-width: 900px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .hero {
+    flex-direction: column;
+  }
+
+  .hero-visual {
+    width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
