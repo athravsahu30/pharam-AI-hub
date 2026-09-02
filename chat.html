@@ -31,7 +31,8 @@
         
         <label class="upload-btn">
             📸 Open Camera / Gallery
-            <input type="file" id="imageInput" accept="image/*" capture="environment">
+            <!-- Yahan se capture="environment" hata diya gaya hai taaki Gallery ka option aaye -->
+            <input type="file" id="imageInput" accept="image/*">
         </label>
         
         <img id="preview" src="" alt="Prescription Preview">
@@ -41,7 +42,7 @@
         <div id="resultBox"></div>
     </div>
 
-    <!-- Naya version number taaki mobile hamesha naya code uthaye -->
-    <script src="chat.js?v=super-final-v3"></script>
+    <!-- Naya version cache hatane ke liye -->
+    <script src="chat.js?v=professional-v1"></script>
 </body>
 </html>
