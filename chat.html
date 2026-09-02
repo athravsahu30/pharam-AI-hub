@@ -3,34 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharma AI Assistant</title>
+    <title>AI Prescription Reader</title>
     <style>
-        body { font-family: 'Georgia', serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
-        .chat-container { width: 100%; max-width: 500px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; }
-        .chat-header { background: #0056b3; color: white; padding: 15px; text-align: center; font-weight: bold; }
-        .chat-box { height: 400px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #e9ecef; }
-        .message { padding: 10px 15px; border-radius: 20px; max-width: 80%; font-size: 14px; }
-        .bot-msg { background: white; color: black; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .user-msg { background: #0056b3; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .input-area { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 5px; outline: none; }
-        button { background: #0056b3; color: white; border: none; padding: 10px 15px; margin-left: 10px; border-radius: 5px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e8f0fe; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        .scanner-container { background: white; width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; box-shadow: 0 8px 24px rgba(0, 86, 179, 0.15); text-align: center; }
+        .header { color: #0056b3; margin-bottom: 5px; font-size: 24px; font-weight: bold; }
+        .sub-header { color: #666; font-size: 14px; margin-bottom: 25px; }
+        
+        /* Camera Button Style */
+        .upload-btn { background: #009688; color: white; padding: 15px 25px; border-radius: 30px; cursor: pointer; display: inline-block; font-weight: bold; font-size: 16px; transition: 0.3s; box-shadow: 0 4px 10px rgba(0, 150, 136, 0.3); }
+        .upload-btn:hover { background: #00796b; }
+        
+        /* Hide default file input */
+        #imageInput { display: none; }
+        
+        /* Image Preview */
+        #preview { max-width: 100%; margin-top: 20px; border-radius: 8px; display: none; border: 2px dashed #cce0ff; box-sizing: border-box; }
+        
+        /* Scan Button */
+        button.scan-btn { background: #0056b3; color: white; border: none; padding: 12px 25px; border-radius: 30px; margin-top: 20px; cursor: pointer; font-weight: bold; font-size: 16px; display: none; width: 100%; transition: 0.3s; }
+        button.scan-btn:hover { background: #004494; }
+        
+        /* Loader and Results */
+        .loader { display: none; margin-top: 20px; color: #009688; font-weight: bold; font-size: 16px; }
+        #resultBox { margin-top: 20px; padding: 15px; background: #f4f8ff; border-radius: 8px; text-align: left; display: none; border: 1px solid #cce0ff; font-size: 15px; line-height: 1.6; color: #333; }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <div class="chat-header">Pharma AI Chatbot 🤖</div>
-        <div class="chat-box" id="chatBox">
-            <div class="message bot-msg">Hello! I am your Pharma Assistant. Ask me anything about medicines or pharmacology.</div>
-        </div>
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Ask about a drug (e.g., Amoxicillin)...">
-            <button id="sendBtn">Send</button>
-        </div>
+    <div class="scanner-container">
+        <div class="header">📄 Smart Prescription Reader</div>
+        <div class="sub-header">Upload or take a photo of a medical prescription</div>
+        
+        <!-- 'capture="environment"' forces mobile phones to open the back camera -->
+        <label class="upload-btn">
+            📸 Open Camera / Gallery
+            <input type="file" id="imageInput" accept="image/*" capture="environment">
+        </label>
+        
+        <img id="preview" src="" alt="Prescription Preview">
+        <button id="scanBtn" class="scan-btn">🔍 Read Prescription</button>
+        
+        <div id="loader" class="loader">Scanning doctor's handwriting... ⏳</div>
+        <div id="resultBox"></div>
     </div>
 
-    <!-- Maine yahan ?v=999 lagaya hai taaki browser hamesha naya code uthaye -->
-    <script src="chat.js?v=999"></script>
+    <!-- Anti-cache versioning so you see changes instantly -->
+    <script src="chat.js?v=scanner-1"></script>
 </body>
 </html>
