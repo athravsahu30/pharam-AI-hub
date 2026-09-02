@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaRAG | PharmaAI Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg:#04060C; --card:rgba(255,255,255,0.035); --card-border:rgba(88,140,255,0.25);
+            --blue:#4C8DFF; --cyan:#22D3EE; --ink:#EAF0FB; --ink-soft:#8C97B3; --white-box:#F7F9FC;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%),
+                radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%),
+                var(--bg);
+            display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh;
+        }
+
+        .page { width: 100%; max-width: 640px; }
+
+        .back-link {
+            display: inline-block; margin-bottom: 16px; font-size: 13px;
+            color: #7AB0FF; text-decoration: none;
+        }
+
+        .rag-header { margin-bottom: 18px; }
+        .rag-header .tag {
+            display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+            letter-spacing: 0.05em; text-transform: uppercase; color: var(--cyan);
+            background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3);
+            padding: 4px 10px; border-radius: 20px; margin-bottom: 10px;
+        }
+        .rag-header h1 {
+            font-family: 'Space Grotesk', sans-serif; font-size: 26px; color: var(--ink); margin: 0 0 6px;
+        }
+        .rag-header p { color: var(--ink-soft); font-size: 14px; margin: 0; }
+
+        .chat-container {
+            background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
+            overflow: hidden; display: flex; flex-direction: column; backdrop-filter: blur(6px);
+        }
+
+        .chat-box {
+            height: 460px; padding: 20px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+
+        .message { padding: 12px 16px; border-radius: 14px; max-width: 85%; font-size: 14.5px; line-height: 1.55; }
+        .bot-msg {
+            background: var(--white-box); color: #16140F; align-self: flex-start;
+            border-bottom-left-radius: 4px; border-left: 3px solid var(--blue);
+        }
+        .bot-msg strong { color: #0B4FA8; }
+        .user-msg {
+            background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C;
+            align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 600;
+        }
+        .typing { color: var(--ink-soft); font-style: italic; font-size: 13px; align-self: flex-start; }
+
+        .quick-chips {
+            display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 14px;
+        }
+        .quick-chips button {
+            font-family: inherit; font-size: 12px; padding: 6px 12px; border-radius: 20px;
+            background: rgba(76,141,255,0.10); border: 1px solid var(--card-border); color: #7AB0FF;
+            cursor: pointer;
+        }
+        .quick-chips button:hover { background: rgba(76,141,255,0.20); }
+
+        .input-area {
+            display: flex; padding: 14px; background: rgba(0,0,0,0.25); border-top: 1px solid var(--card-border);
+        }
+        input[type="text"] {
+            flex: 1; padding: 12px 15px; border: 1px solid #D8D2C0; border-radius: 25px; outline: none;
+            font-size: 14px; background: var(--white-box) !important; color: #000000 !important;
+            -webkit-text-fill-color: #000000; caret-color: #000000;
+        }
+        input[type="text"]::placeholder { color: #8A8478; }
+        button#sendBtn {
+            background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border: none;
+            padding: 0 22px; margin-left: 10px; border-radius: 25px; cursor: pointer; font-weight: 700;
+            font-family: inherit; font-size: 14px;
+        }
+        button#sendBtn:hover { filter: brightness(1.08); }
+
+        .disclaimer {
+            font-size: 11.5px; color: var(--ink-soft); text-align: center; margin-top: 14px; line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <a href="index.html" class="back-link">← Back to Dashboard</a>
+
+    <div class="rag-header">
+        <span class="tag">✦ Beta — no API key needed</span>
+        <h1>PharmaRAG</h1>
+        <p>Pharmaceutical Q&amp;A assistant — sawaal poochein, US FDA (OpenFDA) database se live jawab milega.</p>
+    </div>
+
+    <div class="chat-container">
+        <div class="chat-box" id="chatBox">
+            <div class="message bot-msg">Hello! Kisi bhi drug ke baare me poochiye — jaise <strong>"Ibuprofen ke side effects kya hai?"</strong> ya <strong>"Amoxicillin dosage"</strong>.</div>
+        </div>
+
+        <div class="quick-chips">
+            <button type="button" onclick="askQuick('Paracetamol ke uses kya hai')">Paracetamol uses</button>
+            <button type="button" onclick="askQuick('Ibuprofen side effects')">Ibuprofen side effects</button>
+            <button type="button" onclick="askQuick('Amoxicillin dosage')">Amoxicillin dosage</button>
+            <button type="button" onclick="askQuick('Aspirin warnings')">Aspirin warnings</button>
+        </div>
+
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Apna sawaal likhein…" autocomplete="off">
+            <button id="sendBtn">Send</button>
+        </div>
+    </div>
+
+    <p class="disclaimer">
+        Data source: US FDA OpenFDA API — Indian brand names (jaise Dolo, Crocin) match nahi karenge, generic naam use karein (jaise Paracetamol, Ibuprofen). Yeh medical advice nahi hai.
+    </p>
+
+</div>
+
+<script>
+    const chatBox = document.getElementById('chatBox');
+    const userInput = document.getElementById('userInput');
+    const sendBtn = document.getElementById('sendBtn');
+
+    const STOPWORDS = ['what','are','is','the','of','for','side','effect','effects','adr','reaction','reactions',
+        'dosage','dose','doses','uses','use','used','interaction','interactions','warning','warnings','precaution',
+        'precautions','tell','me','about','how','much','does','do','i','take','can','a','an','to','with','ke','ka',
+        'ki','kya','hai','batao','bataye','se','dawa','dawai','medicine','drug','and','or','please','pls','?'];
+
+    function detectField(question) {
+        const q = question.toLowerCase();
+        if (q.includes('side effect') || q.includes('adr') || q.includes('reaction')) return { key: 'adverse_reactions', label: 'Adverse Reactions (ADR)' };
+        if (q.includes('dose') || q.includes('dosage')) return { key: 'dosage_and_administration', label: 'Dosage & Administration' };
+        if (q.includes('interact')) return { key: 'drug_interactions', label: 'Drug Interactions' };
+        if (q.includes('warning') || q.includes('precaution')) return { key: 'warnings', label: 'Warnings' };
+        return { key: 'indications_and_usage', label: 'Uses (Indications)' };
+    }
+
+    function extractDrugName(question) {
+        const words = question.replace(/[?.,!]/g, '').split(/\s+/);
+        const kept = words.filter(w => w && !STOPWORDS.includes(w.toLowerCase()));
+        return kept.join(' ').trim();
+    }
+
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.className = 'message ' + (sender === 'user' ? 'user-msg' : 'bot-msg');
+        div.innerHTML = text;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+        return div;
+    }
+
+    async function handleQuestion(question) {
+        addMessage(question, 'user');
+        const typingEl = addMessage('Searching OpenFDA… ⏳', 'bot');
+        typingEl.classList.add('typing');
+
+        const field = detectField(question);
+        const drugName = extractDrugName(question).toLowerCase();
+
+        if (!drugName) {
+            typingEl.classList.remove('typing');
+            typingEl.innerHTML = 'Kisi drug ka naam bhi bata dijiye — jaise "Paracetamol ke side effects".';
+            return;
+        }
+
+        try {
+            const url = `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${drugName}"+OR+openfda.brand_name:"${drugName}"&limit=1`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('not-found');
+
+            const data = await response.json();
+            const drugData = data.results[0];
+            const value = drugData[field.key] ? drugData[field.key][0] : null;
+
+            typingEl.classList.remove('typing');
+            if (value) {
+                typingEl.innerHTML = `<strong>${field.label} — ${drugName.toUpperCase()}</strong><br><br>${value.substring(0, 500)}${value.length > 500 ? '…' : ''}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: US FDA (OpenFDA)</span>`;
+            } else {
+                typingEl.innerHTML = `"${drugName}" mila, lekin "${field.label}" ka data available nahi hai. Kuch aur poochne ki koshish karein.`;
+            }
+        } catch (err) {
+            typingEl.classList.remove('typing');
+            typingEl.innerHTML = `❌ "${drugName}" OpenFDA database me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
+        }
+    }
+
+    sendBtn.addEventListener('click', () => {
+        const q = userInput.value.trim();
+        if (!q) return;
+        userInput.value = '';
+        handleQuestion(q);
+    });
+
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendBtn.click();
+    });
+
+    function askQuick(text) {
+        handleQuestion(text);
+    }
+</script>
+</body>
+</html>
