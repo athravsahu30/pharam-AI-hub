@@ -9,13 +9,13 @@ document.addEventListener("DOMContentLoaded", function() {
         let drugName = inputBox.value.trim().toLowerCase();
 
         if (drugName === "") {
-            resultArea.style.color = "red";
+            resultArea.style.color = "#FF6B6B";
             resultArea.innerHTML = "Please pehle kisi drug ka naam type karein!";
             return;
         }
 
         // Loading state (Jab data dhoondh raha ho)
-        resultArea.style.color = "#0056b3";
+        resultArea.style.color = "#7AB0FF";
         resultArea.innerHTML = "Searching OpenFDA database for: " + drugName + "... ⏳";
 
         try {
@@ -35,17 +35,17 @@ document.addEventListener("DOMContentLoaded", function() {
             let adr = drugData.adverse_reactions ? drugData.adverse_reactions[0] : "Data not available.";
 
             // Screen par result dikhana
-            resultArea.style.color = "black";
+            resultArea.style.color = "#EAF0FB";
             resultArea.innerHTML = `
-                <strong style="color: green;">✅ Match Found: ${drugName.toUpperCase()}</strong><br><br>
+                <strong style="color: #34D399;">✅ Match Found: ${drugName.toUpperCase()}</strong><br><br>
                 <strong>Uses (Indications):</strong> ${indications.substring(0, 250)}...<br><br>
                 <strong>Adverse Reactions (ADR):</strong> ${adr.substring(0, 250)}...<br><br>
-                <span style="font-size: 12px; color: gray;">Live Data Source: US FDA (OpenFDA API)</span>
+                <span style="font-size: 12px; color: #8C97B3;">Live Data Source: US FDA (OpenFDA API)</span>
             `;
 
         } catch (error) {
             // Agar error aaye ya dawa database mein na ho
-            resultArea.style.color = "red";
+            resultArea.style.color = "#FF6B6B";
             resultArea.innerHTML = "❌ Sorry, yeh drug OpenFDA database mein nahi mila. Spelling check karein ya dusra naam try karein (Jaise: Ibuprofen, Aspirin).";
         }
     });
