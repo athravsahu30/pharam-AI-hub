@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const loader = document.getElementById("loader");
 
     // 👇 YAHAN APNI ASLI API KEY DAALIYE 👇
-    const API_KEY = "AQ.Ab8RN6KjNHnGIuXEJcQr52GluHl4m6KvJC0Cfz1gDOeQIsLhFw"; 
+    const API_KEY = "AQ.Ab8RN6IUgRUMs3-VLgE6g_uAEI_pDi49PTpEO-3dIPOif591gw"; 
 
     let base64Image = "";
     let mimeType = "";
