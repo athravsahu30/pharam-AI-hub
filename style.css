@@ -1,10 +1,25 @@
 /* ==========================================================
    PharmaAI Hub — style.css
-   NOTE: This is a functional skeleton only (bug-fix pass).
-   It covers every class used in index.html so the page
-   renders and lays out correctly. Visual design/theme
-   comes in the next pass.
+   Layout skeleton (bug-fix pass) + Black/Blue theme (design pass)
    ========================================================== */
+
+:root {
+  --bg: #04060C;
+  --bg-panel: #0A0D16;
+  --card: rgba(255,255,255,0.035);
+  --card-border: rgba(88,140,255,0.20);
+  --card-border-strong: rgba(88,140,255,0.45);
+  --blue: #4C8DFF;
+  --blue-bright: #7AB0FF;
+  --cyan: #22D3EE;
+  --ink: #EAF0FB;
+  --ink-soft: #8C97B3;
+  --white-box: #F7F9FC;
+  --red: #FF6B6B;
+  --green: #34D399;
+  --orange: #FBBF24;
+  --purple: #A78BFA;
+}
 
 * {
   box-sizing: border-box;
@@ -531,6 +546,209 @@ footer {
   padding-top: 20px;
   font-size: 13px;
 }
+
+/* ==========================================================
+   THEME — Black / Blue glow
+   ========================================================== */
+
+body {
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%),
+    var(--bg);
+  color: var(--ink);
+}
+
+h1, h2, h3 {
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--card-border);
+}
+
+.brand h2 { color: var(--ink); font-size: 18px; }
+.brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; }
+.brand-icon {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.nav-label { color: var(--ink-soft); letter-spacing: 0.06em; }
+.nav-item { color: var(--ink-soft); font-size: 14px; }
+.nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
+.nav-item.active {
+  background: rgba(76,141,255,0.16);
+  color: var(--blue-bright);
+  border: 1px solid var(--card-border-strong);
+}
+.nav-item .coming {
+  background: rgba(34,211,238,0.15);
+  color: var(--cyan);
+}
+
+.developer-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--ink);
+}
+.developer-card small { color: var(--ink-soft); display: block; }
+.developer-avatar, .profile-avatar {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* --- Topbar --- */
+.breadcrumb { color: var(--ink-soft); }
+.topbar h1 { color: var(--ink); font-size: 22px; }
+.icon-button {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  color: var(--ink-soft);
+}
+.icon-button:hover { color: var(--blue-bright); border-color: var(--card-border-strong); }
+.profile-info strong { color: var(--ink); font-size: 13px; }
+.profile-info span { color: var(--ink-soft); }
+
+/* --- Hero --- */
+.hero {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+}
+
+.status {
+  background: rgba(76,141,255,0.14);
+  color: var(--blue-bright);
+  border: 1px solid var(--card-border);
+}
+.status-dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+
+.hero-content h2 {
+  color: var(--ink);
+}
+.hero-content h2 span { color: var(--blue-bright); }
+.hero-content p { color: var(--ink-soft); }
+
+.search-container {
+  background: var(--white-box);
+  border: 1px solid #D8D2C0;
+}
+.search-container input { color: #000000; }
+.search-container input::placeholder { color: #8A8478; }
+.search-icon { color: #6B7280; }
+.search-container button {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+}
+
+.search-result { color: var(--ink-soft); }
+.popular-searches { color: var(--ink-soft); }
+.popular-searches button {
+  background: rgba(76,141,255,0.10);
+  border: 1px solid var(--card-border);
+  color: var(--blue-bright);
+}
+.popular-searches button:hover { background: rgba(76,141,255,0.20); }
+
+.orb-one { background: var(--blue); opacity: 0.35; }
+.orb-two { background: var(--cyan); opacity: 0.30; }
+
+.molecule-card {
+  background: rgba(10,13,22,0.85);
+  border: 1px solid var(--card-border-strong);
+}
+.molecule-top { color: var(--ink-soft); }
+.live-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.molecule-symbol {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+}
+.molecule-card h3 { color: var(--ink); }
+.molecule-card p { color: var(--ink-soft); }
+.molecule-lines span { background: rgba(76,141,255,0.25); }
+.molecule-lines span:nth-child(2) { width: 70%; }
+.molecule-lines span:nth-child(3) { width: 45%; }
+
+/* --- Stats --- */
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+}
+.stat-card span { color: var(--ink-soft); }
+.stat-card strong { color: var(--ink); }
+.stat-card small { color: var(--ink-soft); }
+.stat-icon.blue { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+.stat-icon.purple { background: rgba(167,139,250,0.16); color: var(--purple); }
+.stat-icon.green { background: rgba(52,211,153,0.16); color: var(--green); }
+.stat-icon.orange { background: rgba(251,191,36,0.16); color: var(--orange); }
+
+/* --- Section heading --- */
+.eyebrow { color: var(--cyan); letter-spacing: 0.08em; }
+.section-heading h2 { color: var(--ink); }
+.section-heading p { color: var(--ink-soft); }
+.view-all { color: var(--blue-bright); }
+
+/* --- Module cards --- */
+.module-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.module-card:hover {
+  border-color: var(--card-border-strong);
+  transform: translateY(-2px);
+}
+.module-icon.blue-bg { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+.module-icon.red-bg { background: rgba(255,107,107,0.16); color: var(--red); }
+.module-icon.purple-bg { background: rgba(167,139,250,0.16); color: var(--purple); }
+.module-icon.ai-bg { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; }
+.arrow { color: var(--ink-soft); }
+
+.module-tag.blue-tag { background: rgba(76,141,255,0.14); color: var(--blue-bright); }
+.module-tag.red-tag { background: rgba(255,107,107,0.14); color: var(--red); }
+.module-tag.purple-tag { background: rgba(167,139,250,0.14); color: var(--purple); }
+.module-tag.ai-tag { background: rgba(34,211,238,0.14); color: var(--cyan); }
+
+.module-content h3 { color: var(--ink); }
+.module-content p { color: var(--ink-soft); }
+.module-footer { color: var(--ink-soft); border-top: 1px solid var(--card-border); padding-top: 12px; }
+
+.module-card.ai-card {
+  border: 1px solid var(--card-border-strong);
+  background: linear-gradient(145deg, rgba(76,141,255,0.08), rgba(34,211,238,0.05));
+}
+.coming-badge { background: rgba(34,211,238,0.18); color: var(--cyan); }
+
+/* --- AI banner --- */
+.ai-banner {
+  background: linear-gradient(135deg, rgba(76,141,255,0.14), rgba(34,211,238,0.08));
+  border: 1px solid var(--card-border-strong);
+}
+.ai-banner-icon {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+}
+.ai-banner-content span { color: var(--cyan); }
+.ai-banner-content h2 { color: var(--ink); }
+.ai-banner-content p { color: var(--ink-soft); }
+.ai-button {
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C;
+}
+
+/* --- Footer --- */
+footer {
+  border-top: 1px solid var(--card-border);
+  color: var(--ink-soft);
+}
+footer strong { color: var(--ink); }
 
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 900px) {
