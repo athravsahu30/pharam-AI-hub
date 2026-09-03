@@ -23,6 +23,13 @@
 
         .page { width: 100%; max-width: 640px; }
 
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .page { opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+
         .back-link {
             display: inline-block; margin-bottom: 16px; font-size: 13px;
             color: #7AB0FF; text-decoration: none;
@@ -61,6 +68,12 @@
             align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 600;
         }
         .typing { color: var(--ink-soft); font-style: italic; font-size: 13px; align-self: flex-start; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            display: inline-block; width: 12px; height: 12px;
+            border: 2px solid rgba(76,141,255,0.25); border-top-color: var(--blue);
+            border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -1px;
+        }
 
         .quick-chips {
             display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 14px;
@@ -90,6 +103,15 @@
 
         .disclaimer {
             font-size: 11.5px; color: var(--ink-soft); text-align: center; margin-top: 14px; line-height: 1.5;
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .chat-box { height: 380px; padding: 14px; }
+            .rag-header h1 { font-size: 22px; }
+            .quick-chips { padding: 0 14px 12px; }
+            .input-area { padding: 10px; }
+            button#sendBtn { padding: 0 16px; }
         }
     </style>
 </head>
@@ -128,6 +150,7 @@
 
 </div>
 
+<script src="pharma-data.js"></script>
 <script>
     const chatBox = document.getElementById('chatBox');
     const userInput = document.getElementById('userInput');
@@ -164,7 +187,7 @@
 
     async function handleQuestion(question) {
         addMessage(question, 'user');
-        const typingEl = addMessage('Searching OpenFDA… ⏳', 'bot');
+        const typingEl = addMessage('<span class="spinner"></span>&nbsp; Searching…', 'bot');
         typingEl.classList.add('typing');
 
         const field = detectField(question);
@@ -176,24 +199,26 @@
             return;
         }
 
-        try {
-            const url = `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${drugName}"+OR+openfda.brand_name:"${drugName}"&limit=1`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('not-found');
+        const info = await PharmaData.fetchDrugInfo(drugName);
+        typingEl.classList.remove('typing');
 
-            const data = await response.json();
-            const drugData = data.results[0];
-            const value = drugData[field.key] ? drugData[field.key][0] : null;
+        if (!info) {
+            typingEl.innerHTML = `❌ "${drugName}" kisi bhi free database (openFDA / RxNorm / MedlinePlus) me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
+            return;
+        }
 
-            typingEl.classList.remove('typing');
+        if (info.fda) {
+            const value = info.fda[field.key] ? info.fda[field.key][0] : null;
             if (value) {
-                typingEl.innerHTML = `<strong>${field.label} — ${drugName.toUpperCase()}</strong><br><br>${value.substring(0, 500)}${value.length > 500 ? '…' : ''}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: US FDA (OpenFDA)</span>`;
+                typingEl.innerHTML = `<strong>${field.label} — ${info.name.toUpperCase()}</strong><br><br>${value.substring(0, 500)}${value.length > 500 ? '…' : ''}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: US FDA (OpenFDA)</span>`;
             } else {
-                typingEl.innerHTML = `"${drugName}" mila, lekin "${field.label}" ka data available nahi hai. Kuch aur poochne ki koshish karein.`;
+                typingEl.innerHTML = `"${info.name}" mila, lekin "${field.label}" ka data available nahi hai. Kuch aur poochne ki koshish karein.`;
             }
-        } catch (err) {
-            typingEl.classList.remove('typing');
-            typingEl.innerHTML = `❌ "${drugName}" OpenFDA database me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
+        } else if (info.medline) {
+            const items = info.medline.slice(0, 3).map(m =>
+                `<li><a href="${m.link}" target="_blank" rel="noopener" style="color:#0B4FA8;">${m.title}</a></li>`
+            ).join("");
+            typingEl.innerHTML = `<strong>${info.name.toUpperCase()}</strong> — FDA label data nahi mila, lekin MedlinePlus (NIH) pe yeh mila:<br><ul style="margin:8px 0 0 18px;padding:0;">${items}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: MedlinePlus Connect (NIH)</span>`;
         }
     }
 
