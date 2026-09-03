@@ -19,15 +19,10 @@
           --cyan: #22D3EE;
           --ink: #EAF0FB;
           --ink-soft: #8C97B3;
-          --red: #FF6B6B;
-          --green: #34D399;
-          --orange: #FBBF24;
-          --purple: #A78BFA;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        /* Body Layout */
         body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; width: 100%; }
         a { text-decoration: none; color: inherit; }
         button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
@@ -47,15 +42,21 @@
         .skip-btn:hover { color: var(--ink); }
 
         /* ===================== SIDEBAR ===================== */
-        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: left 0.3s ease; }
-        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        
+        /* Desktop Collapse State */
+        @media (min-width: 901px) {
+            .sidebar.collapsed { width: 0; padding-left: 0; padding-right: 0; border: none; opacity: 0; }
+        }
+        
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; min-width: 200px;}
         .brand h2 { color: var(--ink); font-size: 18px; margin: 0; }
         .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; display: block; }
-        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; }
+        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; flex-shrink: 0;}
         
-        .navigation { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .navigation { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 200px; }
         .nav-label { font-size: 11px; margin: 16px 0 6px; color: var(--ink-soft); letter-spacing: 0.06em; }
-        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; white-space: nowrap; }
         .nav-icon { width: 18px; text-align: center; }
         .nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
         .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
@@ -65,8 +66,7 @@
         .sidebar-overlay.show { display: block; opacity: 1; }
 
         /* ===================== MAIN CONTENT ===================== */
-        /* min-width: 0 prevents flex items from overflowing their container */
-        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; width: 100%; min-width: 0; }
+        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; width: 100%; min-width: 0; transition: width 0.3s; }
         
         /* Topbar & Header */
         .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 15px; width: 100%; }
@@ -74,8 +74,9 @@
         .topbar h1 { color: var(--ink); font-size: 22px; margin: 0; }
         .top-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
         
-        /* Mobile Menu Button */
-        .menu-toggle { display: none; color: var(--ink); font-size: 24px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 8px; align-items: center; justify-content: center; }
+        /* Always show menu toggle now (for both mobile and desktop collapse) */
+        .menu-toggle { display: flex; color: var(--ink); font-size: 24px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 8px; align-items: center; justify-content: center; transition: 0.2s; }
+        .menu-toggle:hover { background: rgba(76,141,255,0.15); border-color: var(--card-border-strong); }
         
         /* User Auth UI */
         .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
@@ -87,6 +88,14 @@
         .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); white-space: nowrap; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
+        /* ===================== DASHBOARD SEARCH BOX ===================== */
+        .dashboard-search { display: flex; gap: 12px; margin-bottom: 24px; }
+        .dashboard-search input { flex: 1; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--card-border-strong); background: rgba(0,0,0,0.3); color: white; font-size: 16px; outline: none; font-family: inherit; transition: 0.3s; }
+        .dashboard-search input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(34,211,238,0.2); }
+        .dashboard-search input::placeholder { color: var(--ink-soft); }
+        .dashboard-search button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .dashboard-search button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+
         /* ===================== HERO ===================== */
         .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px; border-radius: 16px; margin-bottom: 24px; background: var(--card); border: 1px solid var(--card-border); }
         .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 16px; background: rgba(76,141,255,0.14); color: var(--blue-bright); border: 1px solid var(--card-border); }
@@ -95,8 +104,8 @@
         .hero-content h2 span { color: var(--blue-bright); }
         .hero-content p { font-size: 15px; margin-bottom: 0; color: var(--ink-soft); }
 
-        /* ===================== STATS & MODULES ===================== */
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        /* ===================== STATS & MODULES (3 Columns) ===================== */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 32px; }
         .stat-card { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s; }
         .stat-card:hover { transform: translateY(-2px); border-color: var(--card-border-strong); }
         .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
@@ -107,7 +116,6 @@
         .stat-icon.blue { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
         .stat-icon.purple { background: rgba(167,139,250,0.16); color: var(--purple); }
         .stat-icon.green { background: rgba(52,211,153,0.16); color: var(--green); }
-        .stat-icon.orange { background: rgba(251,191,36,0.16); color: var(--orange); }
 
         .section-heading h2 { font-size: 20px; margin-bottom: 16px; color: var(--ink); margin-top: 0; }
         
@@ -126,20 +134,19 @@
         .module-tag.ai-tag { background: rgba(34,211,238,0.14); color: var(--cyan); }
         .module-card.ai-card { border: 1px solid var(--card-border-strong); background: linear-gradient(145deg, rgba(76,141,255,0.08), rgba(34,211,238,0.05)); }
 
-        /* ===================== MOBILE RESPONSIVENESS FIX ===================== */
+        /* ===================== MOBILE RESPONSIVENESS ===================== */
         @media (max-width: 900px) {
-            .menu-toggle { display: flex; }
-            
-            /* Sidebar is strictly hidden using LEFT instead of transform */
             .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; height: 100vh; width: 260px; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
             .sidebar.open { left: 0; }
             
             .main-content { padding: 15px; width: 100vw; }
-            
             .topbar { flex-wrap: wrap; gap: 10px; }
             .breadcrumb { display: none; } 
             .profile-info { display: none; } 
             
+            .dashboard-search { flex-direction: column; }
+            .dashboard-search button { padding: 15px; justify-content: center; }
+
             .hero { flex-direction: column; text-align: center; padding: 20px; }
             .hero-content h2 { font-size: 26px; }
             
@@ -190,10 +197,10 @@
     <main class="main-content">
         
         <header class="topbar">
-            <!-- Mobile Menu Button -->
-            <button class="menu-toggle" id="mobileMenuBtn">☰</button>
+            <!-- Universal Menu Toggle (Collapses on PC, Slides on Mobile) -->
+            <button class="menu-toggle" id="menuBtn">☰</button>
             
-            <div>
+            <div style="margin-left: 15px;">
                 <div class="breadcrumb">Overview / Dashboard</div>
                 <h1>Dashboard</h1>
             </div>
@@ -216,11 +223,19 @@
         <section class="hero">
             <div class="hero-content">
                 <div class="status"><span class="status-dot"></span> All systems operational</div>
-                <h2>Welcome to <span>PharmaAI Hub</span></h2>
+                <!-- Dynamic Greeting Here -->
+                <h2 id="welcomeGreeting">Hello, <span>Guest</span></h2>
                 <p>An advanced AI platform for pharmacy students and professionals. Explore medical data, extract drug information, and read prescriptions instantly.</p>
             </div>
         </section>
 
+        <!-- New Dashboard Search Box -->
+        <div class="dashboard-search">
+            <input type="text" id="dashSearchInput" placeholder="Search drug name..." onkeypress="if(event.key === 'Enter') window.location.href='pharmarag.html';">
+            <button onclick="window.location.href='pharmarag.html';">🔍 Search</button>
+        </div>
+
+        <!-- 3 Stats Cards -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon blue">💊</div>
@@ -233,10 +248,6 @@
             <div class="stat-card">
                 <div class="stat-icon green">⚡</div>
                 <div><span>Uptime</span><strong>99.9%</strong><small>System Active</small></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon orange">👤</div>
-                <div><span>Users</span><strong id="liveUsersText">Tracking</strong><small>Firebase Admin</small></div>
             </div>
         </div>
 
@@ -271,15 +282,22 @@
 
     <!-- UI Logic Script -->
     <script>
-        const mobileMenuBtn = document.getElementById("mobileMenuBtn");
+        const menuBtn = document.getElementById("menuBtn");
         const sidebar = document.getElementById("sidebar");
         const sidebarOverlay = document.getElementById("sidebarOverlay");
         const welcomeModalOverlay = document.getElementById("welcomeModalOverlay");
         const closeModalBtn = document.getElementById("closeModalBtn");
 
-        mobileMenuBtn.addEventListener("click", () => {
-            sidebar.classList.add("open");
-            sidebarOverlay.classList.add("show");
+        // Universal Toggle Logic (Desktop Collapse / Mobile Slide)
+        menuBtn.addEventListener("click", () => {
+            if (window.innerWidth > 900) {
+                // Desktop: Collapse Sidebar
+                sidebar.classList.toggle("collapsed");
+            } else {
+                // Mobile: Slide in Sidebar
+                sidebar.classList.add("open");
+                sidebarOverlay.classList.add("show");
+            }
         });
 
         sidebarOverlay.addEventListener("click", () => {
@@ -320,7 +338,7 @@
         const userProfile = document.getElementById("userProfile");
         const userNameDisplay = document.getElementById("userNameDisplay");
         const userProfilePic = document.getElementById("userProfilePic");
-        const liveUsersText = document.getElementById("liveUsersText");
+        const welcomeGreeting = document.getElementById("welcomeGreeting");
 
         const handleLogin = () => {
             signInWithPopup(auth, provider)
@@ -331,7 +349,7 @@
                 })
                 .catch((error) => {
                     console.error("Login Failed:", error.message);
-                    alert("Login failed! Please open this website in Google Chrome or Safari browser directly.");
+                    alert("Login failed! Please check your Firebase authorized domains or use Chrome/Safari directly.");
                 });
         };
 
@@ -346,6 +364,8 @@
             } else {
                 loginBtn.style.display = "flex";
                 userProfile.style.display = "none";
+                welcomeGreeting.innerHTML = `Hello, <span>Guest</span>`;
+                
                 setTimeout(() => {
                     document.getElementById("welcomeModalOverlay").classList.add("show");
                 }, 500);
@@ -355,9 +375,12 @@
         function updateHeaderUI(user) {
             loginBtn.style.display = "none"; 
             userProfile.style.display = "flex"; 
-            userNameDisplay.innerText = user.displayName.split(" ")[0]; 
+            const firstName = user.displayName.split(" ")[0];
+            userNameDisplay.innerText = firstName; 
             userProfilePic.src = user.photoURL;
-            liveUsersText.innerText = "Active";
+            
+            // Update Dynamic Greeting
+            welcomeGreeting.innerHTML = `Hello, <span>${firstName}</span>`;
         }
 
         async function saveUserDataToAdmin(user) {
