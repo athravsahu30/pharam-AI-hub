@@ -4,87 +4,229 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaAI Hub - Dashboard</title>
+    <!-- Fonts for the new theme -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Professional Pharma UI Styling */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f8ff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        /* ==========================================================
+           PharmaAI Hub — style.css
+           Layout skeleton + Black/Blue theme (Embedded to fix cache)
+           ========================================================== */
+
+        :root {
+          --bg: #04060C;
+          --bg-panel: #0A0D16;
+          --card: rgba(255,255,255,0.035);
+          --card-border: rgba(88,140,255,0.20);
+          --card-border-strong: rgba(88,140,255,0.45);
+          --blue: #4C8DFF;
+          --blue-bright: #7AB0FF;
+          --cyan: #22D3EE;
+          --ink: #EAF0FB;
+          --ink-soft: #8C97B3;
+          --white-box: #F7F9FC;
+          --red: #FF6B6B;
+          --green: #34D399;
+          --orange: #FBBF24;
+          --purple: #A78BFA;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+        /* ===================== SIDEBAR ===================== */
+        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); }
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+        .brand h2 { color: var(--ink); font-size: 18px; }
+        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; }
+        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; }
+        .navigation { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .nav-label { font-size: 11px; margin: 16px 0 6px; color: var(--ink-soft); letter-spacing: 0.06em; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; }
+        .nav-icon { width: 18px; text-align: center; }
+        .nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
+        .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
+
+        /* ===================== MAIN CONTENT & TOPBAR ===================== */
+        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+        .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
+        .topbar h1 { color: var(--ink); font-size: 22px; }
+        .top-actions { display: flex; align-items: center; gap: 16px; }
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
+        .profile-info strong { color: var(--ink); font-size: 13px; }
+        .profile-info span { font-size: 11px; color: var(--ink-soft); }
+        .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
+
+        /* Custom Login Button to match Theme */
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,211,238,0.3); }
+
+        /* ===================== HERO ===================== */
+        .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px; border-radius: 16px; margin-bottom: 24px; background: var(--card); border: 1px solid var(--card-border); }
+        .hero-content { flex: 1; min-width: 0; }
+        .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 16px; background: rgba(76,141,255,0.14); color: var(--blue-bright); border: 1px solid var(--card-border); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .hero-content h2 { font-size: 34px; line-height: 1.2; margin-bottom: 14px; color: var(--ink); }
+        .hero-content h2 span { color: var(--blue-bright); }
+        .hero-content p { font-size: 15px; margin-bottom: 22px; max-width: 46ch; color: var(--ink-soft); }
+
+        /* ===================== STATS GRID ===================== */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stat-card { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); border-color: var(--card-border-strong); }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-card span { display: block; font-size: 12px; color: var(--ink-soft); }
+        .stat-card strong { display: block; font-size: 20px; margin: 2px 0; color: var(--ink); }
+        .stat-card small { font-size: 11px; color: var(--ink-soft); }
+        .stat-icon.blue { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+        .stat-icon.purple { background: rgba(167,139,250,0.16); color: var(--purple); }
+        .stat-icon.green { background: rgba(52,211,153,0.16); color: var(--green); }
+        .stat-icon.orange { background: rgba(251,191,36,0.16); color: var(--orange); }
+
+        /* ===================== MODULES GRID ===================== */
+        .section-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .section-heading h2 { font-size: 20px; margin: 4px 0; color: var(--ink); }
+        .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .module-card { display: flex; flex-direction: column; padding: 20px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s ease; cursor: pointer; }
+        .module-card:hover { border-color: var(--card-border-strong); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .module-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .module-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .module-tag { display: inline-block; font-size: 10px; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 20px; margin-bottom: 10px; }
+        .module-content h3 { font-size: 16px; margin-bottom: 8px; color: var(--ink); }
+        .module-content p { font-size: 13px; margin-bottom: 14px; color: var(--ink-soft); }
         
-        /* Sidebar Styling */
-        .sidebar { width: 260px; background: linear-gradient(180deg, #0056b3, #004494); color: white; padding: 25px 20px; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-        .sidebar-header { font-size: 22px; font-weight: bold; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        .nav-links { list-style: none; padding: 0; margin: 0; }
-        .nav-links li { padding: 12px 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; }
-        .nav-links li:hover { background: rgba(255,255,255,0.2); }
-        .nav-links li.active { background: #009688; border-left: 4px solid white; }
-        
-        /* Main Content & Header */
-        .main-container { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .header-title { color: #0056b3; font-size: 20px; font-weight: bold; margin: 0; }
-        
-        /* Top Actions Section (Auth) */
-        .top-actions { display: flex; align-items: center; gap: 15px; }
-        
-        .login-btn { background: #009688; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0, 150, 136, 0.3); }
-        .login-btn:hover { background: #00796b; transform: translateY(-1px); }
-        
-        /* User Profile in Header */
-        .user-profile { display: none; align-items: center; gap: 10px; background: #e8f0fe; padding: 6px 15px 6px 6px; border-radius: 30px; border: 1px solid #cce0ff; cursor: pointer; }
-        .user-profile img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .user-details { font-size: 14px; font-weight: bold; color: #0056b3; }
-        
-        /* Dashboard Content */
-        .content { padding: 30px; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 86, 179, 0.1); border: 1px solid #e0eaf5; }
+        .module-icon.blue-bg { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+        .module-tag.blue-tag { background: rgba(76,141,255,0.14); color: var(--blue-bright); }
+        .module-icon.ai-bg { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; }
+        .module-tag.ai-tag { background: rgba(34,211,238,0.14); color: var(--cyan); }
+        .module-card.ai-card { border: 1px solid var(--card-border-strong); background: linear-gradient(145deg, rgba(76,141,255,0.08), rgba(34,211,238,0.05)); }
+
+        /* Animations */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        .anim-in { opacity: 0; animation: fadeInUp 0.6s ease forwards; }
+        .anim-stagger > div { opacity: 0; animation: fadeInUp 0.55s ease forwards; }
+        .anim-stagger > div:nth-child(1) { animation-delay: 0.1s; }
+        .anim-stagger > div:nth-child(2) { animation-delay: 0.2s; }
+        .anim-stagger > div:nth-child(3) { animation-delay: 0.3s; }
+        .anim-stagger > div:nth-child(4) { animation-delay: 0.4s; }
     </style>
 </head>
 <body>
 
     <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-header">⚕️ PharmaAI Hub</div>
-        <ul class="nav-links">
-            <li class="active">📊 Dashboard</li>
-            <li onclick="window.location.href='pharmarag.html'">💊 Drug Explorer</li>
-            <li onclick="window.location.href='chat.html'">📄 Smart Prescription</li>
-        </ul>
-    </div>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">⚕️</div>
+            <div>
+                <h2>PharmaAI</h2>
+                <span>HUB</span>
+            </div>
+        </div>
+        <nav class="navigation">
+            <div class="nav-label">MAIN MENU</div>
+            <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
+            <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
+        </nav>
+    </aside>
 
-    <!-- Main Workspace -->
-    <div class="main-container">
+    <!-- Main Content -->
+    <main class="main-content">
         
-        <!-- Header with Top Actions -->
-        <div class="header">
-            <h1 class="header-title">Dashboard</h1>
-            
+        <!-- Topbar & Auth -->
+        <header class="topbar">
+            <div>
+                <div class="breadcrumb">Overview / Dashboard</div>
+                <h1>Dashboard</h1>
+            </div>
             <div class="top-actions">
                 <!-- Login Button -->
                 <button id="googleLoginBtn" class="login-btn">
-                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in with Google
+                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
                 </button>
                 
-                <!-- Logged-in Profile View -->
-                <div id="userProfile" class="user-profile">
-                    <img id="userProfilePic" src="" alt="User">
-                    <span id="userNameDisplay" class="user-details">Name</span>
+                <!-- Logged-in Profile View (Matching your Dark Theme) -->
+                <div id="userProfile" class="profile" style="display: none;">
+                    <img id="userProfilePic" src="" alt="User" class="profile-avatar">
+                    <div class="profile-info">
+                        <strong id="userNameDisplay">Name</strong>
+                        <span>Authenticated</span>
+                    </div>
                 </div>
+            </div>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero anim-in">
+            <div class="hero-content">
+                <div class="status"><span class="status-dot"></span> All systems operational</div>
+                <h2>Welcome to <span>PharmaAI Hub</span></h2>
+                <p>An advanced AI platform for pharmacy students and professionals. Explore medical data, extract drug information, and read prescriptions instantly.</p>
+            </div>
+        </section>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid anim-stagger">
+            <div class="stat-card">
+                <div class="stat-icon blue">💊</div>
+                <div><span>Medicines</span><strong>10,000+</strong><small>RxNorm Indexed</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">📄</div>
+                <div><span>Scans</span><strong>500+</strong><small>Prescriptions read</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">⚡</div>
+                <div><span>Uptime</span><strong>99.9%</strong><small>System Active</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">👤</div>
+                <div><span>Users</span><strong id="liveUsersText">Tracking</strong><small>Firebase Admin</small></div>
             </div>
         </div>
 
-        <!-- Dashboard Content -->
-        <div class="content">
-            <div class="card">
-                <h2>Overview</h2>
-                <p>Welcome to the PharmaAI Hub. Please sign in using the button in the top right corner to authenticate your session and access advanced features.</p>
-            </div>
+        <!-- Modules Grid -->
+        <div class="section-heading anim-in" style="animation-delay: 0.5s;">
+            <h2>Quick Access Modules</h2>
         </div>
-    </div>
+
+        <div class="modules-grid anim-stagger" style="animation-delay: 0.6s;">
+            
+            <div class="module-card" onclick="window.location.href='pharmarag.html'">
+                <div class="module-header">
+                    <div class="module-icon blue-bg">💊</div>
+                    <span class="module-tag blue-tag">RAG System</span>
+                </div>
+                <div class="module-content">
+                    <h3>Drug Explorer</h3>
+                    <p>Search generic medicines, view structured indications, ADRs, and categorized dosage forms.</p>
+                </div>
+            </div>
+
+            <div class="module-card ai-card" onclick="window.location.href='chat.html'">
+                <div class="module-header">
+                    <div class="module-icon ai-bg">📄</div>
+                    <span class="module-tag ai-tag">AI Vision</span>
+                </div>
+                <div class="module-content">
+                    <h3>Smart Prescription Scanner</h3>
+                    <p>Upload handwritten prescriptions to instantly extract patient details and exact medicines.</p>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
 
     <!-- ========================================== -->
     <!-- FIREBASE SDKs & AUTHENTICATION LOGIC       -->
     <!-- ========================================== -->
     <script type="module">
-        // Using CDN links for Browser compatibility
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -101,7 +243,6 @@
             measurementId: "G-E58BF7JT1P"
         };
 
-        // Initialize Firebase & Analytics
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const auth = getAuth(app);
@@ -112,18 +253,17 @@
         const userProfile = document.getElementById("userProfile");
         const userNameDisplay = document.getElementById("userNameDisplay");
         const userProfilePic = document.getElementById("userProfilePic");
+        const liveUsersText = document.getElementById("liveUsersText");
 
         // Login Click Handler
         loginBtn.addEventListener("click", () => {
             signInWithPopup(auth, provider)
                 .then((result) => {
-                    const user = result.user;
-                    updateHeaderUI(user);
-                    saveUserDataToAdmin(user);
+                    updateHeaderUI(result.user);
+                    saveUserDataToAdmin(result.user);
                 })
                 .catch((error) => {
                     console.error("Login Failed:", error.message);
-                    alert("Authentication failed! " + error.message);
                 });
         });
 
@@ -142,8 +282,9 @@
         function updateHeaderUI(user) {
             loginBtn.style.display = "none"; 
             userProfile.style.display = "flex"; 
-            userNameDisplay.innerText = user.displayName; 
+            userNameDisplay.innerText = user.displayName.split(" ")[0]; // First name only
             userProfilePic.src = user.photoURL;
+            liveUsersText.innerText = "Active";
         }
 
         // Firestore Database Tracking Function
@@ -156,7 +297,6 @@
                     photoURL: user.photoURL,
                     lastLoginTime: new Date().toLocaleString("en-IN")
                 }, { merge: true });
-                console.log("Admin Data: User tracked successfully!");
             } catch (error) {
                 console.error("Admin Tracking Error:", error);
             }
