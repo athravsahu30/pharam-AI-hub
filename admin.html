@@ -1,0 +1,9 @@
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+async function fetchAllUsers() {
+  const querySnapshot = await getDocs(collection(db, "users"));
+  querySnapshot.forEach((doc) => {
+    // Har ek user ka data yahan milega jise aap table mein dikha sakte hain[cite: 1]
+    console.log(doc.id, " => ", doc.data());
+  });
+}
