@@ -21,8 +21,16 @@
 
 <body>
 
+<!-- ================= PAGE LOADER ================= -->
+<div class="page-loader" id="pageLoader">
+    <div class="loader-mark">✚</div>
+</div>
+
+<!-- ================= SIDEBAR OVERLAY (mobile) ================= -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- ================= SIDEBAR ================= -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
 
     <div class="brand">
         <div class="brand-icon">✚</div>
@@ -106,9 +114,12 @@
     <!-- TOP BAR -->
     <header class="topbar">
 
-        <div>
-            <p class="breadcrumb">Workspace / Dashboard</p>
-            <h1>Good afternoon, Athrav 👋</h1>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+            <div>
+                <p class="breadcrumb">Workspace / Dashboard</p>
+                <h1>Good afternoon, Athrav 👋</h1>
+            </div>
         </div>
 
         <div class="top-actions">
@@ -132,7 +143,7 @@
 
 
     <!-- ================= HERO ================= -->
-    <section class="hero">
+    <section class="hero anim-in">
 
         <div class="hero-content">
 
@@ -228,7 +239,7 @@
 
 
     <!-- ================= STATS ================= -->
-    <section class="stats-grid">
+    <section class="stats-grid anim-stagger">
 
         <div class="stat-card">
             <div class="stat-icon blue">⚕</div>
@@ -290,7 +301,7 @@
 
 
     <!-- ================= MODULES ================= -->
-    <section class="modules-grid">
+    <section class="modules-grid anim-stagger">
 
         <!-- Prescription Reader -->
         <a href="chat.html" style="text-decoration:none; color:inherit;">
@@ -507,7 +518,8 @@
 
 
 <!-- ================= SCRIPT ================= -->
-<script src="app.js?v=3"></script>
+<script src="pharma-data.js"></script>
+<script src="app.js?v=4"></script>
 
 <script>
     function setDrug(drugName) {
@@ -516,6 +528,37 @@
         input.value = drugName;
         input.focus();
     }
+
+    // Page loader — hides once everything is ready
+    window.addEventListener("load", function () {
+        setTimeout(function () {
+            document.getElementById("pageLoader").classList.add("hidden");
+        }, 350);
+    });
+
+    // Mobile hamburger menu
+    const sidebarEl = document.getElementById("sidebar");
+    const overlayEl = document.getElementById("sidebarOverlay");
+    const menuToggleEl = document.getElementById("menuToggle");
+
+    function openSidebar() {
+        sidebarEl.classList.add("open");
+        overlayEl.classList.add("show");
+    }
+    function closeSidebar() {
+        sidebarEl.classList.remove("open");
+        overlayEl.classList.remove("show");
+    }
+
+    menuToggleEl.addEventListener("click", function () {
+        sidebarEl.classList.contains("open") ? closeSidebar() : openSidebar();
+    });
+    overlayEl.addEventListener("click", closeSidebar);
+
+    // Close sidebar automatically when a nav link is tapped (mobile)
+    document.querySelectorAll(".nav-item").forEach(function (link) {
+        link.addEventListener("click", closeSidebar);
+    });
 </script>
 
 </body>
