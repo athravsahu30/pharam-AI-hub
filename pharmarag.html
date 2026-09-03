@@ -6,7 +6,51 @@
     <title>PharmaRAG | PharmaAI Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
+    <style><!-- Firebase SDKs (HTML ke <head> mein daalein) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // TODO: Yahan apne Firebase Project ki 'firebaseConfig' daalein (Firebase console se milegi)
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+    authDomain: "pharma-ai.firebaseapp.com",
+    projectId: "pharma-ai",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Login Function
+  document.getElementById("googleLoginBtn").addEventListener("click", () => {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        const user = result.user;
+        
+        // 1. Sidebar update karna (UI change)
+        document.getElementById("userNameDisplay").innerText = `Good afternoon, ${user.displayName}`;
+        document.getElementById("userProfilePic").src = user.photoURL;
+
+        // 2. Admin Tracking ke liye Firestore mein save karna[cite: 1]
+        saveUserData(user);
+      })
+      .catch((error) => console.error("Login Failed", error));
+  });
+
+  // User Data Track karne ka Logic[cite: 1]
+  async function saveUserData(user) {
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+      name: user.displayName,
+      email: user.email,
+      photoURL: user.photoURL,
+      lastLogin: new Date().toISOString()
+    }, { merge: true }); // Merge true ka matlab purana data overwrite nahi hoga, bas update hoga
+  }
+</script>
         :root{
             --bg:#04060C; --card:rgba(255,255,255,0.035); --card-border:rgba(88,140,255,0.25);
             --blue:#4C8DFF; --cyan:#22D3EE; --ink:#EAF0FB; --ink-soft:#8C97B3; --white-box:#F7F9FC;
