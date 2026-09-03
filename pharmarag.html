@@ -135,7 +135,9 @@
             <button type="button" onclick="askQuick('Paracetamol ke uses kya hai')">Paracetamol uses</button>
             <button type="button" onclick="askQuick('Ibuprofen side effects')">Ibuprofen side effects</button>
             <button type="button" onclick="askQuick('Amoxicillin dosage')">Amoxicillin dosage</button>
-            <button type="button" onclick="askQuick('Aspirin warnings')">Aspirin warnings</button>
+            <button type="button" onclick="askQuick('Aspirin chemistry formula')">Aspirin formula</button>
+            <button type="button" onclick="askQuick('Metformin research trials')">Metformin research</button>
+            <button type="button" onclick="askQuick('Ibuprofen real world reported side effects')">Ibuprofen real-world data</button>
         </div>
 
         <div class="input-area">
@@ -145,7 +147,7 @@
     </div>
 
     <p class="disclaimer">
-        Data source: US FDA OpenFDA API — Indian brand names (jaise Dolo, Crocin) match nahi karenge, generic naam use karein (jaise Paracetamol, Ibuprofen). Yeh medical advice nahi hai.
+        Data sources: openFDA, RxNorm, MedlinePlus, DailyMed, PubChem, ClinicalTrials.gov (sab free, US government/NIH). Indian brand names (jaise Dolo, Crocin) match nahi karenge, generic naam use karein (jaise Paracetamol, Ibuprofen). Yeh medical advice nahi hai.
     </p>
 
 </div>
@@ -163,6 +165,10 @@
 
     function detectField(question) {
         const q = question.toLowerCase();
+        if (q.includes('chemistry') || q.includes('formula') || q.includes('molecular') || q.includes('structure')) return { key: 'chemistry', label: 'Chemistry' };
+        if (q.includes('trial') || q.includes('research') || q.includes('study') || q.includes('studies')) return { key: 'trials', label: 'Research Studies' };
+        if (q.includes('recall') || q.includes('safety alert') || q.includes('banned')) return { key: 'recall', label: 'Recall / Safety Alert' };
+        if (q.includes('real world') || q.includes('reported') || q.includes('common side effect')) return { key: 'topReactions', label: 'Most-Reported Side Effects' };
         if (q.includes('side effect') || q.includes('adr') || q.includes('reaction')) return { key: 'adverse_reactions', label: 'Adverse Reactions (ADR)' };
         if (q.includes('dose') || q.includes('dosage')) return { key: 'dosage_and_administration', label: 'Dosage & Administration' };
         if (q.includes('interact')) return { key: 'drug_interactions', label: 'Drug Interactions' };
@@ -203,7 +209,45 @@
         typingEl.classList.remove('typing');
 
         if (!info) {
-            typingEl.innerHTML = `❌ "${drugName}" kisi bhi free database (openFDA / RxNorm / MedlinePlus) me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
+            typingEl.innerHTML = `❌ "${drugName}" kisi bhi free database (openFDA / RxNorm / MedlinePlus / PubChem / ClinicalTrials) me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
+            return;
+        }
+
+        const extras = info.extras || {};
+
+        // Extras-based questions (chemistry / research / recall / real-world side effects)
+        if (field.key === 'chemistry') {
+            if (extras.chemistry) {
+                typingEl.innerHTML = `<strong>🧪 Chemistry — ${info.name.toUpperCase()}</strong><br><br>Formula: <code>${extras.chemistry.formula || 'N/A'}</code><br>Molecular Weight: ${extras.chemistry.weight || 'N/A'}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: PubChem (NIH)</span>`;
+            } else {
+                typingEl.innerHTML = `"${info.name}" ke liye chemistry data PubChem pe nahi mila.`;
+            }
+            return;
+        }
+        if (field.key === 'trials') {
+            if (extras.trials && extras.trials.length) {
+                const items = extras.trials.map(t => `<li><a href="${t.link}" target="_blank" rel="noopener" style="color:#0B4FA8;">${t.title}</a> <span style="font-size:11px;color:#6B7280;">(${t.status || 'status unknown'})</span></li>`).join("");
+                typingEl.innerHTML = `<strong>🔬 Research Studies — ${info.name.toUpperCase()}</strong><br><ul style="margin:8px 0 0 18px;padding:0;">${items}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: ClinicalTrials.gov</span>`;
+            } else {
+                typingEl.innerHTML = `"${info.name}" ke liye koi active research study nahi mili ClinicalTrials.gov pe.`;
+            }
+            return;
+        }
+        if (field.key === 'recall') {
+            if (extras.recall) {
+                typingEl.innerHTML = `<strong style="color:#d32f2f;">⚠️ Recall/Safety Alert — ${info.name.toUpperCase()}</strong><br><br>${extras.recall.reason || 'Details available'}<br>Status: ${extras.recall.status || 'N/A'}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: openFDA Enforcement</span>`;
+            } else {
+                typingEl.innerHTML = `✅ "${info.name}" ke liye koi active recall/safety alert nahi mila openFDA database me.`;
+            }
+            return;
+        }
+        if (field.key === 'topReactions') {
+            if (extras.topReactions && extras.topReactions.length) {
+                const chips = extras.topReactions.map(r => `<li>${r.term.toLowerCase()} — ${r.count} reports</li>`).join("");
+                typingEl.innerHTML = `<strong>📊 Most-Reported Real-World Side Effects — ${info.name.toUpperCase()}</strong><br><ul style="margin:8px 0 0 18px;padding:0;">${chips}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: openFDA Adverse Event Reports</span>`;
+            } else {
+                typingEl.innerHTML = `"${info.name}" ke liye real-world reported side-effect data available nahi hai.`;
+            }
             return;
         }
 
