@@ -3,327 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PharmaRAG | PharmaAI Hub</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style><!-- Firebase SDKs (HTML ke <head> mein daalein) -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  // TODO: Yahan apne Firebase Project ki 'firebaseConfig' daalein (Firebase console se milegi)
-  const firebaseConfig = {
-    apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
-    authDomain: "pharma-ai.firebaseapp.com",
-    projectId: "pharma-ai",
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
-
-  // Login Function
-  document.getElementById("googleLoginBtn").addEventListener("click", () => {
-    signInWithPopup(auth, provider)
-      .then((result) => {
-        const user = result.user;
+    <title>PharmaAI - Drug Explorer</title>
+    <style>
+        /* Professional Pharma UI / UX Styling */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e8f0fe; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
-        // 1. Sidebar update karna (UI change)
-        document.getElementById("userNameDisplay").innerText = `Good afternoon, ${user.displayName}`;
-        document.getElementById("userProfilePic").src = user.photoURL;
-
-        // 2. Admin Tracking ke liye Firestore mein save karna[cite: 1]
-        saveUserData(user);
-      })
-      .catch((error) => console.error("Login Failed", error));
-  });
-
-  // User Data Track karne ka Logic[cite: 1]
-  async function saveUserData(user) {
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, {
-      name: user.displayName,
-      email: user.email,
-      photoURL: user.photoURL,
-      lastLogin: new Date().toISOString()
-    }, { merge: true }); // Merge true ka matlab purana data overwrite nahi hoga, bas update hoga
-  }
-</script>
-        :root{
-            --bg:#04060C; --card:rgba(255,255,255,0.035); --card-border:rgba(88,140,255,0.25);
-            --blue:#4C8DFF; --cyan:#22D3EE; --ink:#EAF0FB; --ink-soft:#8C97B3; --white-box:#F7F9FC;
-        }
-        * { box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background:
-                radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%),
-                radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%),
-                var(--bg);
-            display: flex; justify-content: center; padding: 20px; margin: 0; min-height: 100vh;
-        }
-
-        .page { width: 100%; max-width: 640px; }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        .page { opacity: 0; animation: fadeInUp 0.5s ease forwards; }
-
-        .back-link {
-            display: inline-block; margin-bottom: 16px; font-size: 13px;
-            color: #7AB0FF; text-decoration: none;
-        }
-
-        .rag-header { margin-bottom: 18px; }
-        .rag-header .tag {
-            display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
-            letter-spacing: 0.05em; text-transform: uppercase; color: var(--cyan);
-            background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3);
-            padding: 4px 10px; border-radius: 20px; margin-bottom: 10px;
-        }
-        .rag-header h1 {
-            font-family: 'Space Grotesk', sans-serif; font-size: 26px; color: var(--ink); margin: 0 0 6px;
-        }
-        .rag-header p { color: var(--ink-soft); font-size: 14px; margin: 0; }
-
-        .chat-container {
-            background: var(--card); border: 1px solid var(--card-border); border-radius: 18px;
-            overflow: hidden; display: flex; flex-direction: column; backdrop-filter: blur(6px);
-        }
-
-        .chat-box {
-            height: 460px; padding: 20px; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 12px;
-        }
-
-        .message { padding: 12px 16px; border-radius: 14px; max-width: 85%; font-size: 14.5px; line-height: 1.55; }
-        .bot-msg {
-            background: var(--white-box); color: #16140F; align-self: flex-start;
-            border-bottom-left-radius: 4px; border-left: 3px solid var(--blue);
-        }
-        .bot-msg strong { color: #0B4FA8; }
-        .user-msg {
-            background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C;
-            align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 600;
-        }
-        .typing { color: var(--ink-soft); font-style: italic; font-size: 13px; align-self: flex-start; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .spinner {
-            display: inline-block; width: 12px; height: 12px;
-            border: 2px solid rgba(76,141,255,0.25); border-top-color: var(--blue);
-            border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -1px;
-        }
-
-        .quick-chips {
-            display: flex; gap: 8px; flex-wrap: wrap; padding: 0 20px 14px;
-        }
-        .quick-chips button {
-            font-family: inherit; font-size: 12px; padding: 6px 12px; border-radius: 20px;
-            background: rgba(76,141,255,0.10); border: 1px solid var(--card-border); color: #7AB0FF;
-            cursor: pointer;
-        }
-        .quick-chips button:hover { background: rgba(76,141,255,0.20); }
-
-        .input-area {
-            display: flex; padding: 14px; background: rgba(0,0,0,0.25); border-top: 1px solid var(--card-border);
-        }
-        input[type="text"] {
-            flex: 1; padding: 12px 15px; border: 1px solid #D8D2C0; border-radius: 25px; outline: none;
-            font-size: 14px; background: var(--white-box) !important; color: #000000 !important;
-            -webkit-text-fill-color: #000000; caret-color: #000000;
-        }
-        input[type="text"]::placeholder { color: #8A8478; }
-        button#sendBtn {
-            background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border: none;
-            padding: 0 22px; margin-left: 10px; border-radius: 25px; cursor: pointer; font-weight: 700;
-            font-family: inherit; font-size: 14px;
-        }
-        button#sendBtn:hover { filter: brightness(1.08); }
-
-        .disclaimer {
-            font-size: 11.5px; color: var(--ink-soft); text-align: center; margin-top: 14px; line-height: 1.5;
-        }
-
-        @media (max-width: 480px) {
-            body { padding: 12px; }
-            .chat-box { height: 380px; padding: 14px; }
-            .rag-header h1 { font-size: 22px; }
-            .quick-chips { padding: 0 14px 12px; }
-            .input-area { padding: 10px; }
-            button#sendBtn { padding: 0 16px; }
-        }
+        /* Sidebar Styling */
+        .sidebar { width: 260px; background: linear-gradient(180deg, #0056b3, #004494); color: white; padding: 25px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .header-title { font-size: 22px; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
+        .sub-title { font-size: 13px; color: #cce0ff; margin-bottom: 30px; }
+        
+        /* Main Content Area */
+        .content { flex: 1; padding: 30px; overflow-y: auto; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 86, 179, 0.15); border: 1px solid #cce0ff; }
+        
+        /* Auth Button & Profile Styling */
+        .login-btn { background: white; color: #0056b3; border: none; padding: 14px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .login-btn:hover { background: #f8fafd; transform: translateY(-2px); }
+        
+        .user-profile { display: none; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .user-profile img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; }
+        .user-details { font-size: 13px; overflow: hidden; }
+        .user-details span { font-weight: bold; font-size: 15px; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+        .user-details small { color: #cce0ff; }
     </style>
 </head>
 <body>
-<div class="page">
 
-    <a href="index.html" class="back-link">← Back to Dashboard</a>
-
-    <div class="rag-header">
-        <span class="tag">✦ Beta — no API key needed</span>
-        <h1>PharmaRAG</h1>
-        <p>Pharmaceutical Q&amp;A assistant — sawaal poochein, US FDA (OpenFDA) database se live jawab milega.</p>
-    </div>
-
-    <div class="chat-container">
-        <div class="chat-box" id="chatBox">
-            <div class="message bot-msg">Hello! Kisi bhi drug ke baare me poochiye — jaise <strong>"Ibuprofen ke side effects kya hai?"</strong> ya <strong>"Amoxicillin dosage"</strong>.</div>
+    <!-- Sidebar Section -->
+    <div class="sidebar">
+        <div>
+            <div class="header-title">⚕️ PharmaAI Hub</div>
+            <div class="sub-title">Advanced Drug Explorer</div>
+            
+            <!-- Future Navigation Links can go here -->
         </div>
 
-        <div class="quick-chips">
-            <button type="button" onclick="askQuick('Paracetamol ke uses kya hai')">Paracetamol uses</button>
-            <button type="button" onclick="askQuick('Ibuprofen side effects')">Ibuprofen side effects</button>
-            <button type="button" onclick="askQuick('Amoxicillin dosage')">Amoxicillin dosage</button>
-            <button type="button" onclick="askQuick('Aspirin chemistry formula')">Aspirin formula</button>
-            <button type="button" onclick="askQuick('Metformin research trials')">Metformin research</button>
-            <button type="button" onclick="askQuick('Ibuprofen real world reported side effects')">Ibuprofen real-world data</button>
-        </div>
-
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Apna sawaal likhein…" autocomplete="off">
-            <button id="sendBtn">Send</button>
+        <!-- Authentication Section -->
+        <div id="authSection">
+            <!-- Login Button -->
+            <button id="googleLoginBtn" class="login-btn">
+                <img src="https://www.google.com/favicon.ico" width="18" alt="Google"> Sign in with Google
+            </button>
+            
+            <!-- Logged-in User Profile (Hidden by default) -->
+            <div id="userProfile" class="user-profile">
+                <img id="userProfilePic" src="" alt="Profile Pic">
+                <div class="user-details">
+                    <span id="userNameDisplay">Name</span>
+                    <small id="userEmailDisplay">Email</small>
+                </div>
+            </div>
         </div>
     </div>
 
-    <p class="disclaimer">
-        Data sources: openFDA, RxNorm, MedlinePlus, DailyMed, PubChem, ClinicalTrials.gov (sab free, US government/NIH). Indian brand names (jaise Dolo, Crocin) match nahi karenge, generic naam use karein (jaise Paracetamol, Ibuprofen). Yeh medical advice nahi hai.
-    </p>
+    <!-- Main Content Section -->
+    <div class="content">
+        <div class="card">
+            <h2 style="color: #0056b3; margin-top: 0;">Drug Explorer (RAG System)</h2>
+            <p>Welcome! Please use the sidebar to login. Once logged in, your details will be authenticated.</p>
+            <!-- Aapka Drug Search bar aur results is jagah par aayenge -->
+        </div>
+    </div>
 
-</div>
+    <!-- ========================================== -->
+    <!-- FIREBASE SDKs & AUTHENTICATION LOGIC       -->
+    <!-- ========================================== -->
+    <script type="module">
+        // 1. Importing Firebase Modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<script src="pharma-data.js"></script>
-<script>
-    const chatBox = document.getElementById('chatBox');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
+        // 👇👇 YAHAN APNI FIREBASE CONFIGURATION PASTE KARIYE 👇👇
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // 👆👆 ================================================ 👆👆
 
-    const STOPWORDS = ['what','are','is','the','of','for','side','effect','effects','adr','reaction','reactions',
-        'dosage','dose','doses','uses','use','used','interaction','interactions','warning','warnings','precaution',
-        'precautions','tell','me','about','how','much','does','do','i','take','can','a','an','to','with','ke','ka',
-        'ki','kya','hai','batao','bataye','se','dawa','dawai','medicine','drug','and','or','please','pls','?'];
+        // 2. Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
 
-    function detectField(question) {
-        const q = question.toLowerCase();
-        if (q.includes('chemistry') || q.includes('formula') || q.includes('molecular') || q.includes('structure')) return { key: 'chemistry', label: 'Chemistry' };
-        if (q.includes('trial') || q.includes('research') || q.includes('study') || q.includes('studies')) return { key: 'trials', label: 'Research Studies' };
-        if (q.includes('recall') || q.includes('safety alert') || q.includes('banned')) return { key: 'recall', label: 'Recall / Safety Alert' };
-        if (q.includes('real world') || q.includes('reported') || q.includes('common side effect')) return { key: 'topReactions', label: 'Most-Reported Side Effects' };
-        if (q.includes('side effect') || q.includes('adr') || q.includes('reaction')) return { key: 'adverse_reactions', label: 'Adverse Reactions (ADR)' };
-        if (q.includes('dose') || q.includes('dosage')) return { key: 'dosage_and_administration', label: 'Dosage & Administration' };
-        if (q.includes('interact')) return { key: 'drug_interactions', label: 'Drug Interactions' };
-        if (q.includes('warning') || q.includes('precaution')) return { key: 'warnings', label: 'Warnings' };
-        return { key: 'indications_and_usage', label: 'Uses (Indications)' };
-    }
+        // 3. UI Elements ko JavaScript mein pakadna
+        const loginBtn = document.getElementById("googleLoginBtn");
+        const userProfile = document.getElementById("userProfile");
+        const userNameDisplay = document.getElementById("userNameDisplay");
+        const userProfilePic = document.getElementById("userProfilePic");
+        const userEmailDisplay = document.getElementById("userEmailDisplay");
 
-    function extractDrugName(question) {
-        const words = question.replace(/[?.,!]/g, '').split(/\s+/);
-        const kept = words.filter(w => w && !STOPWORDS.includes(w.toLowerCase()));
-        return kept.join(' ').trim();
-    }
+        // 4. Google Login Button Click Event
+        loginBtn.addEventListener("click", () => {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    const user = result.user;
+                    updateSidebarUI(user);
+                    saveUserDataToAdmin(user);
+                })
+                .catch((error) => {
+                    console.error("Login Failed:", error.message);
+                    alert("Login failed! " + error.message);
+                });
+        });
 
-    function addMessage(text, sender) {
-        const div = document.createElement('div');
-        div.className = 'message ' + (sender === 'user' ? 'user-msg' : 'bot-msg');
-        div.innerHTML = text;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-        return div;
-    }
-
-    async function handleQuestion(question) {
-        addMessage(question, 'user');
-        const typingEl = addMessage('<span class="spinner"></span>&nbsp; Searching…', 'bot');
-        typingEl.classList.add('typing');
-
-        const field = detectField(question);
-        const drugName = extractDrugName(question).toLowerCase();
-
-        if (!drugName) {
-            typingEl.classList.remove('typing');
-            typingEl.innerHTML = 'Kisi drug ka naam bhi bata dijiye — jaise "Paracetamol ke side effects".';
-            return;
-        }
-
-        const info = await PharmaData.fetchDrugInfo(drugName);
-        typingEl.classList.remove('typing');
-
-        if (!info) {
-            typingEl.innerHTML = `❌ "${drugName}" kisi bhi free database (openFDA / RxNorm / MedlinePlus / PubChem / ClinicalTrials) me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).`;
-            return;
-        }
-
-        const extras = info.extras || {};
-
-        // Extras-based questions (chemistry / research / recall / real-world side effects)
-        if (field.key === 'chemistry') {
-            if (extras.chemistry) {
-                typingEl.innerHTML = `<strong>🧪 Chemistry — ${info.name.toUpperCase()}</strong><br><br>Formula: <code>${extras.chemistry.formula || 'N/A'}</code><br>Molecular Weight: ${extras.chemistry.weight || 'N/A'}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: PubChem (NIH)</span>`;
+        // 5. Auto-Login Check (Agar user pehle se logged in hai toh page refresh hone par gayab na ho)
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                updateSidebarUI(user);
+                saveUserDataToAdmin(user); // Last login time update karne ke liye
             } else {
-                typingEl.innerHTML = `"${info.name}" ke liye chemistry data PubChem pe nahi mila.`;
+                // Agar user logged out hai
+                loginBtn.style.display = "flex";
+                userProfile.style.display = "none";
             }
-            return;
-        }
-        if (field.key === 'trials') {
-            if (extras.trials && extras.trials.length) {
-                const items = extras.trials.map(t => `<li><a href="${t.link}" target="_blank" rel="noopener" style="color:#0B4FA8;">${t.title}</a> <span style="font-size:11px;color:#6B7280;">(${t.status || 'status unknown'})</span></li>`).join("");
-                typingEl.innerHTML = `<strong>🔬 Research Studies — ${info.name.toUpperCase()}</strong><br><ul style="margin:8px 0 0 18px;padding:0;">${items}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: ClinicalTrials.gov</span>`;
-            } else {
-                typingEl.innerHTML = `"${info.name}" ke liye koi active research study nahi mili ClinicalTrials.gov pe.`;
-            }
-            return;
-        }
-        if (field.key === 'recall') {
-            if (extras.recall) {
-                typingEl.innerHTML = `<strong style="color:#d32f2f;">⚠️ Recall/Safety Alert — ${info.name.toUpperCase()}</strong><br><br>${extras.recall.reason || 'Details available'}<br>Status: ${extras.recall.status || 'N/A'}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: openFDA Enforcement</span>`;
-            } else {
-                typingEl.innerHTML = `✅ "${info.name}" ke liye koi active recall/safety alert nahi mila openFDA database me.`;
-            }
-            return;
-        }
-        if (field.key === 'topReactions') {
-            if (extras.topReactions && extras.topReactions.length) {
-                const chips = extras.topReactions.map(r => `<li>${r.term.toLowerCase()} — ${r.count} reports</li>`).join("");
-                typingEl.innerHTML = `<strong>📊 Most-Reported Real-World Side Effects — ${info.name.toUpperCase()}</strong><br><ul style="margin:8px 0 0 18px;padding:0;">${chips}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: openFDA Adverse Event Reports</span>`;
-            } else {
-                typingEl.innerHTML = `"${info.name}" ke liye real-world reported side-effect data available nahi hai.`;
-            }
-            return;
+        });
+
+        // 6. UI Update Function (Naam aur Photo dikhana)
+        function updateSidebarUI(user) {
+            loginBtn.style.display = "none"; 
+            userProfile.style.display = "flex"; 
+            
+            // "Good afternoon, Name" jaisa feel dene ke liye
+            userNameDisplay.innerText = "Hi, " + user.displayName.split(" ")[0]; 
+            userEmailDisplay.innerText = user.email;
+            userProfilePic.src = user.photoURL;
         }
 
-        if (info.fda) {
-            const value = info.fda[field.key] ? info.fda[field.key][0] : null;
-            if (value) {
-                typingEl.innerHTML = `<strong>${field.label} — ${info.name.toUpperCase()}</strong><br><br>${value.substring(0, 500)}${value.length > 500 ? '…' : ''}<br><br><span style="font-size:11.5px;color:#6B7280;">Source: US FDA (OpenFDA)</span>`;
-            } else {
-                typingEl.innerHTML = `"${info.name}" mila, lekin "${field.label}" ka data available nahi hai. Kuch aur poochne ki koshish karein.`;
+        // 7. Admin Tracking Function (Firestore Database mein data bhejna)
+        async function saveUserDataToAdmin(user) {
+            try {
+                // "users" naam ke database folder mein user ki ID se file banegi
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    name: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    lastLoginTime: new Date().toLocaleString("en-IN") // Indian Time
+                }, { merge: true }); // Merge se purana data delete nahi hoga
+                
+                console.log("User Data tracked in Firestore successfully!");
+            } catch (error) {
+                console.error("Tracking Error:", error);
             }
-        } else if (info.medline) {
-            const items = info.medline.slice(0, 3).map(m =>
-                `<li><a href="${m.link}" target="_blank" rel="noopener" style="color:#0B4FA8;">${m.title}</a></li>`
-            ).join("");
-            typingEl.innerHTML = `<strong>${info.name.toUpperCase()}</strong> — FDA label data nahi mila, lekin MedlinePlus (NIH) pe yeh mila:<br><ul style="margin:8px 0 0 18px;padding:0;">${items}</ul><br><span style="font-size:11.5px;color:#6B7280;">Source: MedlinePlus Connect (NIH)</span>`;
         }
-    }
-
-    sendBtn.addEventListener('click', () => {
-        const q = userInput.value.trim();
-        if (!q) return;
-        userInput.value = '';
-        handleQuestion(q);
-    });
-
-    userInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') sendBtn.click();
-    });
-
-    function askQuick(text) {
-        handleQuestion(text);
-    }
-</script>
+    </script>
 </body>
 </html>
