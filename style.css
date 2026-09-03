@@ -750,27 +750,146 @@ footer {
 }
 footer strong { color: var(--ink); }
 
+/* ==========================================================
+   PAGE LOADER (shown briefly while page boots)
+   ========================================================== */
+.page-loader {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+.page-loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader-mark {
+  width: 56px; height: 56px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--blue), var(--cyan));
+  color: #04060C; font-weight: 700; font-size: 22px;
+  animation: loaderPulse 1s ease-in-out infinite;
+}
+@keyframes loaderPulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(76,141,255,0.4); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(76,141,255,0); }
+}
+
+/* ==========================================================
+   ANIMATIONS — entrance, shimmer, spinner
+   ========================================================== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer {
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+.anim-in {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
+}
+.hero { animation-delay: 0.05s; }
+.stats-grid.anim-stagger .stat-card,
+.modules-grid.anim-stagger .module-card {
+  opacity: 0;
+  animation: fadeInUp 0.55s ease forwards;
+}
+.stats-grid.anim-stagger .stat-card:nth-child(1) { animation-delay: 0.10s; }
+.stats-grid.anim-stagger .stat-card:nth-child(2) { animation-delay: 0.18s; }
+.stats-grid.anim-stagger .stat-card:nth-child(3) { animation-delay: 0.26s; }
+.stats-grid.anim-stagger .stat-card:nth-child(4) { animation-delay: 0.34s; }
+.modules-grid.anim-stagger .module-card:nth-child(1) { animation-delay: 0.10s; }
+.modules-grid.anim-stagger .module-card:nth-child(2) { animation-delay: 0.18s; }
+.modules-grid.anim-stagger .module-card:nth-child(3) { animation-delay: 0.26s; }
+.modules-grid.anim-stagger .module-card:nth-child(4) { animation-delay: 0.34s; }
+
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: currentColor;
+  border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -2px;
+}
+
+.skeleton-line {
+  height: 14px; border-radius: 6px; margin-bottom: 8px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 37%, rgba(255,255,255,0.06) 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+/* Smooth, consistent interactive transitions everywhere */
+.nav-item, .icon-button, .popular-searches button, .search-container button,
+.stat-card, .module-card, .ai-button, button {
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+.search-container button:active, .popular-searches button:active, .ai-button:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================================
+   MOBILE NAV (hamburger)
+   ========================================================== */
+.menu-toggle {
+  display: none;
+  width: 38px; height: 38px; border-radius: 10px;
+  background: var(--card); border: 1px solid var(--card-border);
+  color: var(--ink); font-size: 18px;
+  align-items: center; justify-content: center; cursor: pointer;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  z-index: 40; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+.sidebar-overlay.show { opacity: 1; visibility: visible; }
+
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 900px) {
-  body {
-    flex-direction: column;
-  }
+  .menu-toggle { display: flex; }
+
+  body { flex-direction: column; }
 
   .sidebar {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
+    position: fixed; top: 0; left: 0; height: 100vh; z-index: 50;
+    width: 260px; transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 12px 0 32px rgba(0,0,0,0.4);
   }
+  .sidebar.open { transform: translateX(0); }
 
-  .hero {
-    flex-direction: column;
-  }
+  .sidebar-overlay { display: block; }
 
-  .hero-visual {
-    width: 100%;
-  }
+  .main-content { padding: 18px; width: 100%; }
 
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .topbar h1 { font-size: 18px; }
+  .topbar { flex-wrap: wrap; gap: 12px; }
+  .topbar .breadcrumb { display: none; }
+
+  .profile-info { display: none; }
+
+  .hero { flex-direction: column; padding: 22px; }
+  .hero-visual { width: 100%; }
+  .hero-content h2 { font-size: 28px; }
+
+  .search-container { flex-wrap: wrap; padding: 10px; }
+  .search-container input { width: 100%; padding: 10px 4px; }
+  .search-container button { width: 100%; justify-content: center; margin-top: 4px; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .modules-grid { grid-template-columns: 1fr; }
+
+  .ai-banner { flex-direction: column; text-align: center; }
+  .ai-banner-content { text-align: center; }
+
+  footer { flex-direction: column; gap: 8px; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stat-card { padding: 14px; }
+  .hero-content h2 { font-size: 24px; }
 }
