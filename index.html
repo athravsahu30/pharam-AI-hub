@@ -82,7 +82,8 @@
         .menu-toggle:hover { background: rgba(76,141,255,0.15); border-color: var(--card-border-strong); }
         
         /* User Auth UI */
-        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; cursor: pointer; transition: 0.2s; }
+        .profile:hover { border-color: var(--card-border-strong); background: rgba(76,141,255,0.1); }
         .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
         .profile-info strong { color: var(--ink); font-size: 13px; }
         .profile-info span { font-size: 11px; color: var(--ink-soft); }
@@ -158,7 +159,7 @@
             .hero { flex-direction: column; text-align: center; padding: 25px 20px; }
             .hero-content h2 { font-size: 26px; }
             
-            .stats-grid { grid-template-columns: 1fr; gap: 15px; } /* Stack vertically on mobile */
+            .stats-grid { grid-template-columns: 1fr; gap: 15px; } 
             .modules-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -216,7 +217,7 @@
                     <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
                 </button>
                 
-                <div id="userProfile" class="profile" style="display: none;">
+                <div id="userProfile" class="profile" style="display: none;" title="Click to Logout">
                     <img id="userProfilePic" src="" alt="User" class="profile-avatar">
                     <div class="profile-info">
                         <strong id="userNameDisplay">Name</strong>
@@ -339,7 +340,7 @@
     <!-- ========================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Your Firebase Setup
@@ -382,6 +383,20 @@
 
             if(loginBtn) loginBtn.addEventListener("click", handleLogin);
             if(modalLoginBtn) modalLoginBtn.addEventListener("click", handleLogin);
+
+            // LOGOUT LOGIC (Click Profile to Logout)
+            if(userProfile) {
+                userProfile.addEventListener("click", () => {
+                    const confirmLogout = confirm("Do you want to sign out?");
+                    if (confirmLogout) {
+                        signOut(auth).then(() => {
+                            window.location.reload();
+                        }).catch((error) => {
+                            console.error("Logout Error:", error);
+                        });
+                    }
+                });
+            }
 
             onAuthStateChanged(auth, (user) => {
                 if (user) {
