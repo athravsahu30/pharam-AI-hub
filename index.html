@@ -26,29 +26,31 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; }
+        
+        /* Body Layout */
+        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; width: 100%; }
         a { text-decoration: none; color: inherit; }
         button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
         h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
-        /* ===================== WELCOME LOGIN MODAL (NEW) ===================== */
-        .welcome-overlay { position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        /* ===================== WELCOME LOGIN MODAL ===================== */
+        .welcome-overlay { position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(8px); z-index: 20000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .welcome-overlay.show { opacity: 1; visibility: visible; }
         .welcome-modal { background: var(--bg-panel); border: 1px solid var(--card-border-strong); padding: 40px 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.6); transform: translateY(40px) scale(0.95); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .welcome-overlay.show .welcome-modal { transform: translateY(0) scale(1); }
         
-        .welcome-modal .brand-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 20px; box-shadow: 0 8px 20px rgba(34,211,238,0.2); }
+        .welcome-modal .brand-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 20px; box-shadow: 0 8px 20px rgba(34,211,238,0.2); border-radius: 14px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; }
         .welcome-modal h2 { margin-bottom: 12px; font-size: 24px; color: var(--ink); }
         .welcome-modal p { color: var(--ink-soft); font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
-        .welcome-modal .login-btn { width: 100%; justify-content: center; padding: 14px; margin-bottom: 15px; font-size: 15px; }
+        .welcome-modal .login-btn { width: 100%; justify-content: center; padding: 14px; margin-bottom: 15px; font-size: 15px; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
         .skip-btn { color: var(--ink-soft); font-size: 13px; text-decoration: underline; transition: color 0.2s; }
         .skip-btn:hover { color: var(--ink); }
 
         /* ===================== SIDEBAR ===================== */
-        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 1000; transition: transform 0.3s ease; }
+        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: left 0.3s ease; }
         .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
-        .brand h2 { color: var(--ink); font-size: 18px; }
-        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; }
+        .brand h2 { color: var(--ink); font-size: 18px; margin: 0; }
+        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; display: block; }
         .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; }
         
         .navigation { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -59,20 +61,21 @@
         .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
 
         /* Sidebar Overlay for Mobile */
-        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; opacity: 0; transition: opacity 0.3s; }
         .sidebar-overlay.show { display: block; opacity: 1; }
 
         /* ===================== MAIN CONTENT ===================== */
-        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; width: 100%; }
+        /* min-width: 0 prevents flex items from overflowing their container */
+        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; width: 100%; min-width: 0; }
         
         /* Topbar & Header */
-        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 15px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 15px; width: 100%; }
         .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
-        .topbar h1 { color: var(--ink); font-size: 22px; }
+        .topbar h1 { color: var(--ink); font-size: 22px; margin: 0; }
         .top-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
         
         /* Mobile Menu Button */
-        .menu-toggle { display: none; color: var(--ink); font-size: 24px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 8px; }
+        .menu-toggle { display: none; color: var(--ink); font-size: 24px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 8px; align-items: center; justify-content: center; }
         
         /* User Auth UI */
         .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
@@ -81,14 +84,14 @@
         .profile-info span { font-size: 11px; color: var(--ink-soft); }
         .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
         
-        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); }
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); white-space: nowrap; }
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
         /* ===================== HERO ===================== */
         .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px; border-radius: 16px; margin-bottom: 24px; background: var(--card); border: 1px solid var(--card-border); }
         .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 16px; background: rgba(76,141,255,0.14); color: var(--blue-bright); border: 1px solid var(--card-border); }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-        .hero-content h2 { font-size: 34px; line-height: 1.2; margin-bottom: 14px; color: var(--ink); }
+        .hero-content h2 { font-size: 34px; line-height: 1.2; margin-bottom: 14px; color: var(--ink); margin-top: 0; }
         .hero-content h2 span { color: var(--blue-bright); }
         .hero-content p { font-size: 15px; margin-bottom: 0; color: var(--ink-soft); }
 
@@ -96,7 +99,7 @@
         .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
         .stat-card { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s; }
         .stat-card:hover { transform: translateY(-2px); border-color: var(--card-border-strong); }
-        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
         .stat-card span { display: block; font-size: 12px; color: var(--ink-soft); }
         .stat-card strong { display: block; font-size: 20px; margin: 2px 0; color: var(--ink); }
         .stat-card small { font-size: 11px; color: var(--ink-soft); }
@@ -106,16 +109,16 @@
         .stat-icon.green { background: rgba(52,211,153,0.16); color: var(--green); }
         .stat-icon.orange { background: rgba(251,191,36,0.16); color: var(--orange); }
 
-        .section-heading h2 { font-size: 20px; margin-bottom: 16px; color: var(--ink); }
+        .section-heading h2 { font-size: 20px; margin-bottom: 16px; color: var(--ink); margin-top: 0; }
         
         .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 32px; }
         .module-card { display: flex; flex-direction: column; padding: 20px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s ease; cursor: pointer; }
         .module-card:hover { border-color: var(--card-border-strong); transform: translateY(-3px); }
         .module-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
         .module-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-        .module-tag { display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 20px; margin-bottom: 10px; }
-        .module-content h3 { font-size: 16px; margin-bottom: 8px; color: var(--ink); }
-        .module-content p { font-size: 13px; color: var(--ink-soft); }
+        .module-tag { display: inline-block; font-size: 10px; padding: 3px 8px; border-radius: 20px; margin-bottom: 10px; font-weight: 600; }
+        .module-content h3 { font-size: 16px; margin-bottom: 8px; color: var(--ink); margin-top: 0; }
+        .module-content p { font-size: 13px; color: var(--ink-soft); margin: 0; }
         
         .module-icon.blue-bg { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
         .module-tag.blue-tag { background: rgba(76,141,255,0.14); color: var(--blue-bright); }
@@ -123,14 +126,17 @@
         .module-tag.ai-tag { background: rgba(34,211,238,0.14); color: var(--cyan); }
         .module-card.ai-card { border: 1px solid var(--card-border-strong); background: linear-gradient(145deg, rgba(76,141,255,0.08), rgba(34,211,238,0.05)); }
 
-        /* ===================== MOBILE RESPONSIVENESS ===================== */
+        /* ===================== MOBILE RESPONSIVENESS FIX ===================== */
         @media (max-width: 900px) {
-            .menu-toggle { display: block; }
-            .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); }
-            .sidebar.open { transform: translateX(0); }
+            .menu-toggle { display: flex; }
             
-            .main-content { padding: 15px; }
-            .topbar { flex-wrap: wrap; }
+            /* Sidebar is strictly hidden using LEFT instead of transform */
+            .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; height: 100vh; width: 260px; box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
+            .sidebar.open { left: 0; }
+            
+            .main-content { padding: 15px; width: 100vw; }
+            
+            .topbar { flex-wrap: wrap; gap: 10px; }
             .breadcrumb { display: none; } 
             .profile-info { display: none; } 
             
@@ -316,13 +322,12 @@
         const userProfilePic = document.getElementById("userProfilePic");
         const liveUsersText = document.getElementById("liveUsersText");
 
-        // Login Click Handler (For both Topbar and Modal buttons)
         const handleLogin = () => {
             signInWithPopup(auth, provider)
                 .then((result) => {
                     updateHeaderUI(result.user);
                     saveUserDataToAdmin(result.user);
-                    document.getElementById("welcomeModalOverlay").classList.remove("show"); // Hide modal on success
+                    document.getElementById("welcomeModalOverlay").classList.remove("show");
                 })
                 .catch((error) => {
                     console.error("Login Failed:", error.message);
@@ -333,7 +338,6 @@
         loginBtn.addEventListener("click", handleLogin);
         modalLoginBtn.addEventListener("click", handleLogin);
 
-        // Auto-Login Observer
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 updateHeaderUI(user);
@@ -342,8 +346,6 @@
             } else {
                 loginBtn.style.display = "flex";
                 userProfile.style.display = "none";
-                
-                // Show modal with slight delay for smooth entry animation
                 setTimeout(() => {
                     document.getElementById("welcomeModalOverlay").classList.add("show");
                 }, 500);
