@@ -31,6 +31,19 @@
         button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
         h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
+        /* ===================== WELCOME LOGIN MODAL (NEW) ===================== */
+        .welcome-overlay { position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        .welcome-overlay.show { opacity: 1; visibility: visible; }
+        .welcome-modal { background: var(--bg-panel); border: 1px solid var(--card-border-strong); padding: 40px 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.6); transform: translateY(40px) scale(0.95); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .welcome-overlay.show .welcome-modal { transform: translateY(0) scale(1); }
+        
+        .welcome-modal .brand-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 20px; box-shadow: 0 8px 20px rgba(34,211,238,0.2); }
+        .welcome-modal h2 { margin-bottom: 12px; font-size: 24px; color: var(--ink); }
+        .welcome-modal p { color: var(--ink-soft); font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
+        .welcome-modal .login-btn { width: 100%; justify-content: center; padding: 14px; margin-bottom: 15px; font-size: 15px; }
+        .skip-btn { color: var(--ink-soft); font-size: 13px; text-decoration: underline; transition: color 0.2s; }
+        .skip-btn:hover { color: var(--ink); }
+
         /* ===================== SIDEBAR ===================== */
         .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 1000; transition: transform 0.3s ease; }
         .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
@@ -68,8 +81,8 @@
         .profile-info span { font-size: 11px; color: var(--ink-soft); }
         .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
         
-        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; position: relative; z-index: 10; cursor: pointer; }
-        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,211,238,0.3); }
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
         /* ===================== HERO ===================== */
         .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 32px; border-radius: 16px; margin-bottom: 24px; background: var(--card); border: 1px solid var(--card-border); }
@@ -118,8 +131,8 @@
             
             .main-content { padding: 15px; }
             .topbar { flex-wrap: wrap; }
-            .breadcrumb { display: none; } /* Hide breadcrumb on mobile to save space */
-            .profile-info { display: none; } /* Hide name on mobile, show only pic */
+            .breadcrumb { display: none; } 
+            .profile-info { display: none; } 
             
             .hero { flex-direction: column; text-align: center; padding: 20px; }
             .hero-content h2 { font-size: 26px; }
@@ -135,6 +148,21 @@
 </head>
 <body>
 
+    <!-- ANIMATED WELCOME LOGIN MODAL -->
+    <div class="welcome-overlay" id="welcomeModalOverlay">
+        <div class="welcome-modal">
+            <div class="brand-icon">⚕️</div>
+            <h2>Welcome to PharmaAI</h2>
+            <p>Please sign in to access advanced AI modules, extract drug data, and track prescriptions instantly.</p>
+            
+            <button id="modalGoogleLoginBtn" class="login-btn">
+                <img src="https://www.google.com/favicon.ico" width="18" alt="G"> Sign in with Google
+            </button>
+            <button class="skip-btn" id="closeModalBtn">Maybe later, continue as guest</button>
+        </div>
+    </div>
+
+    <!-- UI STRUCTURE -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <aside class="sidebar" id="sidebar">
@@ -237,10 +265,11 @@
 
     <!-- UI Logic Script -->
     <script>
-        // Mobile Sidebar Toggle Logic
         const mobileMenuBtn = document.getElementById("mobileMenuBtn");
         const sidebar = document.getElementById("sidebar");
         const sidebarOverlay = document.getElementById("sidebarOverlay");
+        const welcomeModalOverlay = document.getElementById("welcomeModalOverlay");
+        const closeModalBtn = document.getElementById("closeModalBtn");
 
         mobileMenuBtn.addEventListener("click", () => {
             sidebar.classList.add("open");
@@ -250,6 +279,10 @@
         sidebarOverlay.addEventListener("click", () => {
             sidebar.classList.remove("open");
             sidebarOverlay.classList.remove("show");
+        });
+
+        closeModalBtn.addEventListener("click", () => {
+            welcomeModalOverlay.classList.remove("show");
         });
     </script>
 
@@ -277,32 +310,43 @@
         const provider = new GoogleAuthProvider();
 
         const loginBtn = document.getElementById("googleLoginBtn");
+        const modalLoginBtn = document.getElementById("modalGoogleLoginBtn");
         const userProfile = document.getElementById("userProfile");
         const userNameDisplay = document.getElementById("userNameDisplay");
         const userProfilePic = document.getElementById("userProfilePic");
         const liveUsersText = document.getElementById("liveUsersText");
 
-        // Login Click Handler with Alert for errors
-        loginBtn.addEventListener("click", () => {
+        // Login Click Handler (For both Topbar and Modal buttons)
+        const handleLogin = () => {
             signInWithPopup(auth, provider)
                 .then((result) => {
                     updateHeaderUI(result.user);
                     saveUserDataToAdmin(result.user);
+                    document.getElementById("welcomeModalOverlay").classList.remove("show"); // Hide modal on success
                 })
                 .catch((error) => {
                     console.error("Login Failed:", error.message);
-                    alert("Login failed! Please open this website in Google Chrome or Safari browser directly. Don't open inside WhatsApp/Instagram.");
+                    alert("Login failed! Please open this website in Google Chrome or Safari browser directly.");
                 });
-        });
+        };
+
+        loginBtn.addEventListener("click", handleLogin);
+        modalLoginBtn.addEventListener("click", handleLogin);
 
         // Auto-Login Observer
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 updateHeaderUI(user);
                 saveUserDataToAdmin(user);
+                document.getElementById("welcomeModalOverlay").classList.remove("show");
             } else {
                 loginBtn.style.display = "flex";
                 userProfile.style.display = "none";
+                
+                // Show modal with slight delay for smooth entry animation
+                setTimeout(() => {
+                    document.getElementById("welcomeModalOverlay").classList.add("show");
+                }, 500);
             }
         });
 
