@@ -22,9 +22,20 @@
         .scanner-container {
             background: var(--card); width: 100%; max-width: 500px; border-radius: 18px; padding: 25px;
             border: 1px solid var(--card-border); text-align: center; backdrop-filter: blur(6px);
+            opacity: 0; animation: fadeInUp 0.5s ease forwards;
         }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .header { font-family: 'Space Grotesk', sans-serif; color: var(--ink); margin-bottom: 5px; font-size: 22px; font-weight: 700; }
         .sub-header { color: var(--ink-soft); font-size: 13.5px; margin-bottom: 25px; }
+        .lang-tag {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700;
+            color: var(--cyan); background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3);
+            padding: 3px 10px; border-radius: 20px; margin-bottom: 14px;
+        }
 
         .upload-btn {
             background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 14px 25px;
@@ -43,12 +54,27 @@
         }
         button.scan-btn:hover { background: rgba(76,141,255,0.10); }
 
-        .loader { display: none; margin-top: 20px; color: var(--cyan); font-weight: 600; font-size: 14px; }
+        .loader {
+            display: none; align-items: center; justify-content: center; gap: 8px;
+            margin-top: 20px; color: var(--cyan); font-weight: 600; font-size: 13.5px;
+        }
+        .loader .spin-dot {
+            width: 14px; height: 14px; border: 2px solid rgba(34,211,238,0.25);
+            border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+        .upload-btn:active, button.scan-btn:active { transform: scale(0.97); }
         #resultBox {
             margin-top: 20px; padding: 16px; background: var(--white-box); border-radius: 12px; text-align: left;
             display: none; font-size: 14.5px; line-height: 1.6; color: #1A1A1A; overflow-wrap: break-word;
         }
         .error-msg { color: #d32f2f; font-weight: bold; }
+
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .scanner-container { padding: 18px; border-radius: 14px; }
+            .upload-btn, button.scan-btn { width: 100%; padding: 13px 18px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -57,7 +83,8 @@
         <a href="index.html" style="display:inline-block; margin-bottom:14px; font-size:13px; color:#7AB0FF; text-decoration:none;">← Back to Dashboard</a>
         <div class="header">📄 Smart Prescription Reader</div>
         <div class="sub-header">Upload or take a photo of a medical prescription</div>
-        
+        <span class="lang-tag">🌐 Hindi + English supported</span>
+        <br>
         <label class="upload-btn">
             📸 Open Camera / Gallery
             <input type="file" id="imageInput" accept="image/*">
@@ -66,7 +93,7 @@
         <img id="preview" src="" alt="Prescription Preview">
         <button id="scanBtn" class="scan-btn">🔍 Read Prescription</button>
         
-        <div id="loader" class="loader">Scanning doctor's handwriting... ⏳</div>
+        <div id="loader" class="loader"><span class="spin-dot"></span><span id="loaderText">Scanning doctor's handwriting…</span></div>
         <div id="resultBox"></div>
     </div>
 
@@ -79,6 +106,7 @@
             const scanBtn = document.getElementById("scanBtn");
             const resultBox = document.getElementById("resultBox");
             const loader = document.getElementById("loader");
+            const loaderText = document.getElementById("loaderText");
 
             let currentFile = null;
 
@@ -104,15 +132,17 @@
                 }
 
                 scanBtn.style.display = "none";
-                loader.style.display = "block";
-                loader.textContent = "Scanning doctor's handwriting... ⏳ 0%";
+                loader.style.display = "flex";
+                loaderText.textContent = "Loading Hindi + English models… ⏳";
                 resultBox.style.display = "none";
 
                 try {
-                    const result = await Tesseract.recognize(currentFile, 'eng', {
+                    const result = await Tesseract.recognize(currentFile, 'eng+hin', {
                         logger: m => {
                             if (m.status === 'recognizing text') {
-                                loader.textContent = "Scanning doctor's handwriting... ⏳ " + Math.round(m.progress * 100) + "%";
+                                loaderText.textContent = "Scanning… " + Math.round(m.progress * 100) + "%";
+                            } else if (m.status === 'loading language traineddata') {
+                                loaderText.textContent = "Loading Hindi + English models… ⏳";
                             }
                         }
                     });
