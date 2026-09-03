@@ -3,156 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PharmaAI - Drug Explorer</title>
+    <title>PharmaAI Hub - Drug Explorer</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
     <style>
-        /* Professional Pharma UI / UX Styling */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e8f0fe; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root {
+          --bg: #04060C; --bg-panel: #0A0D16;
+          --card: rgba(255,255,255,0.035); --card-border: rgba(88,140,255,0.20); --card-border-strong: rgba(88,140,255,0.45);
+          --blue: #4C8DFF; --blue-bright: #7AB0FF; --cyan: #22D3EE;
+          --ink: #EAF0FB; --ink-soft: #8C97B3;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+        /* Sidebar (Same as Dashboard) */
+        .sidebar { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 1000; transition: transform 0.3s ease; }
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+        .brand h2 { color: var(--ink); font-size: 18px; }
+        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; }
+        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; }
+        .navigation { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .nav-label { font-size: 11px; margin: 16px 0 6px; color: var(--ink-soft); letter-spacing: 0.06em; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; }
+        .nav-icon { width: 18px; text-align: center; }
+        .nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
+        .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
+
+        /* Main Content & Topbar */
+        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; width: 100%; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 15px; }
+        .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
+        .topbar h1 { color: var(--ink); font-size: 22px; }
+        .top-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
         
-        /* Sidebar Styling */
-        .sidebar { width: 260px; background: linear-gradient(180deg, #0056b3, #004494); color: white; padding: 25px 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
-        .header-title { font-size: 22px; font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 10px; }
-        .sub-title { font-size: 13px; color: #cce0ff; margin-bottom: 30px; }
+        /* User Auth UI */
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
+        .profile-info strong { color: var(--ink); font-size: 13px; }
+        .profile-info span { font-size: 11px; color: var(--ink-soft); }
+        .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(34,211,238,0.3); }
+
+        /* Drug Search Section (NEW & STYLED) */
+        .search-wrapper { background: var(--card); border: 1px solid var(--card-border); padding: 30px; border-radius: 16px; margin-bottom: 24px; animation: fadeInUp 0.5s ease forwards; }
+        .search-header { margin-bottom: 20px; }
+        .search-header h2 { color: var(--ink); font-size: 24px; margin-bottom: 8px; }
+        .search-header p { color: var(--ink-soft); font-size: 14px; }
         
-        /* Main Content Area */
-        .content { flex: 1; padding: 30px; overflow-y: auto; }
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 86, 179, 0.15); border: 1px solid #cce0ff; }
+        .search-box { display: flex; gap: 12px; }
+        .search-box input { flex: 1; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--card-border-strong); background: rgba(0,0,0,0.3); color: white; font-size: 16px; outline: none; font-family: inherit; transition: 0.3s; }
+        .search-box input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(34,211,238,0.2); }
+        .search-box button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .search-box button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+
+        /* Result Section & Loader */
+        .result-container { display: none; background: var(--bg-panel); border: 1px solid var(--card-border); padding: 25px; border-radius: 16px; margin-top: 24px; line-height: 1.7; font-size: 15px; color: var(--ink); animation: fadeInUp 0.5s ease; }
+        .result-container h3 { color: var(--cyan); margin-top: 20px; margin-bottom: 10px; font-size: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; }
+        .result-container h3:first-child { margin-top: 0; }
+        .result-container ul { margin-left: 20px; color: var(--ink-soft); }
+        .result-container b { color: var(--ink); }
+
+        /* Shimmer Loading Animation */
+        .loader { display: none; margin-top: 24px; }
+        .skeleton-line { height: 20px; border-radius: 6px; margin-bottom: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 37%, rgba(255,255,255,0.05) 63%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
+        .skeleton-line.short { width: 60%; }
+        .skeleton-line.title { height: 30px; width: 40%; margin-bottom: 20px; }
+
+        @keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Mobile Adjustments */
+        .menu-toggle { display: none; color: var(--ink); font-size: 24px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 10px; border-radius: 8px; }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999; opacity: 0; transition: 0.3s; }
+        .sidebar-overlay.show { display: block; opacity: 1; }
         
-        /* Auth Button & Profile Styling */
-        .login-btn { background: white; color: #0056b3; border: none; padding: 14px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 15px; width: 100%; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .login-btn:hover { background: #f8fafd; transform: translateY(-2px); }
-        
-        .user-profile { display: none; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.15); padding: 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.2); }
-        .user-profile img { width: 45px; height: 45px; border-radius: 50%; border: 2px solid white; }
-        .user-details { font-size: 13px; overflow: hidden; }
-        .user-details span { font-weight: bold; font-size: 15px; display: block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
-        .user-details small { color: #cce0ff; }
+        @media (max-width: 900px) {
+            .menu-toggle { display: block; }
+            .sidebar { position: fixed; left: 0; top: 0; height: 100vh; transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { padding: 15px; }
+            .topbar { flex-wrap: wrap; }
+            .breadcrumb { display: none; }
+            .profile-info { display: none; }
+            .search-box { flex-direction: column; }
+            .search-box button { padding: 15px; justify-content: center; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar Section -->
-    <div class="sidebar">
-        <div>
-            <div class="header-title">⚕️ PharmaAI Hub</div>
-            <div class="sub-title">Advanced Drug Explorer</div>
-            
-            <!-- Future Navigation Links can go here -->
-        </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-        <!-- Authentication Section -->
-        <div id="authSection">
-            <!-- Login Button -->
-            <button id="googleLoginBtn" class="login-btn">
-                <img src="https://www.google.com/favicon.ico" width="18" alt="Google"> Sign in with Google
-            </button>
-            
-            <!-- Logged-in User Profile (Hidden by default) -->
-            <div id="userProfile" class="user-profile">
-                <img id="userProfilePic" src="" alt="Profile Pic">
-                <div class="user-details">
-                    <span id="userNameDisplay">Name</span>
-                    <small id="userEmailDisplay">Email</small>
-                </div>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">⚕️</div>
+            <div>
+                <h2>PharmaAI</h2>
+                <span>HUB</span>
             </div>
         </div>
-    </div>
+        <nav class="navigation">
+            <div class="nav-label">MAIN MENU</div>
+            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="#" class="nav-item active"><span class="nav-icon">💊</span> Drug Explorer</a>
+            <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
+        </nav>
+    </aside>
 
-    <!-- Main Content Section -->
-    <div class="content">
-        <div class="card">
-            <h2 style="color: #0056b3; margin-top: 0;">Drug Explorer (RAG System)</h2>
-            <p>Welcome! Please use the sidebar to login. Once logged in, your details will be authenticated.</p>
-            <!-- Aapka Drug Search bar aur results is jagah par aayenge -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <header class="topbar">
+            <button class="menu-toggle" id="mobileMenuBtn">☰</button>
+            <div>
+                <div class="breadcrumb">Modules / Drug Explorer</div>
+                <h1>Drug Explorer (RAG)</h1>
+            </div>
+            <div class="top-actions">
+                <button id="googleLoginBtn" class="login-btn">
+                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
+                </button>
+                <div id="userProfile" class="profile" style="display: none;">
+                    <img id="userProfilePic" src="" alt="User" class="profile-avatar">
+                    <div class="profile-info">
+                        <strong id="userNameDisplay">Name</strong>
+                        <span>Authenticated</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search Section -->
+        <div class="search-wrapper">
+            <div class="search-header">
+                <h2>Explore Medicine Data</h2>
+                <p>Search generic medicines to view structured indications, ADRs, and categorized dosage forms.</p>
+            </div>
+            <div class="search-box">
+                <input type="text" id="drugInput" placeholder="e.g. Paracetamol, Amoxicillin..." onkeypress="handleEnter(event)">
+                <button id="searchBtn">🔍 Search Drug</button>
+            </div>
         </div>
-    </div>
 
-    <!-- ========================================== -->
-    <!-- FIREBASE SDKs & AUTHENTICATION LOGIC       -->
-    <!-- ========================================== -->
+        <!-- Animated Loader -->
+        <div class="loader" id="loader">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+            <br>
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line"></div>
+            <div class="skeleton-line short"></div>
+        </div>
+
+        <!-- Result Box -->
+        <div class="result-container" id="resultBox">
+            <!-- AI Content will be injected here -->
+        </div>
+
+    </main>
+
+    <!-- UI Interaction Scripts -->
+    <script>
+        // Mobile Sidebar Logic
+        document.getElementById("mobileMenuBtn").addEventListener("click", () => {
+            document.getElementById("sidebar").classList.add("open");
+            document.getElementById("sidebarOverlay").classList.add("show");
+        });
+        document.getElementById("sidebarOverlay").addEventListener("click", () => {
+            document.getElementById("sidebar").classList.remove("open");
+            document.getElementById("sidebarOverlay").classList.remove("show");
+        });
+
+        // ========================================================
+        // AI DRUG SEARCH LOGIC (WITH PROMPT FIXES)
+        // ========================================================
+        
+        // 👇👇 YAHAN APNI GEMINI AI API KEY DAALEIN 👇👇
+        const GEMINI_API_KEY = "AQ.Ab8RN6L8cpL81FCO5EnMKRfdeomDqzx4zcgrLceHLk_2wvNJQA"; 
+
+        const searchBtn = document.getElementById("searchBtn");
+        const drugInput = document.getElementById("drugInput");
+        const loader = document.getElementById("loader");
+        const resultBox = document.getElementById("resultBox");
+
+        function handleEnter(e) {
+            if(e.key === 'Enter') { searchDrug(); }
+        }
+
+        searchBtn.addEventListener("click", searchDrug);
+
+        async function searchDrug() {
+            const query = drugInput.value.trim();
+            if(!query) {
+                alert("Please enter a medicine name!");
+                return;
+            }
+
+            // Hide old result, show loader
+            resultBox.style.display = "none";
+            loader.style.display = "block";
+
+            // Strict Prompt as per your requirement
+            const prompt = `You are an expert pharmacist. Provide detailed information for the medicine: "${query}". 
+            Strictly format the output in clean HTML. 
+            Include the following sections clearly: 
+            1. Generic Name & RxNorm match. 
+            2. Uses/Indications (use proper commas between diseases, e.g., 'Common cold, Backache'). 
+            3. Detailed Side Effects. 
+            4. Adverse Drug Reactions (ADR). 
+            5. Dosage Forms categorized explicitly for: Child, Adult, and Old People. 
+            Use headings (<h3>), bold text (<b>), and bullet points (<ul><li>). 
+            Do NOT use markdown like **. Start directly with HTML.`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+
+                const data = await response.json();
+                
+                if(!response.ok) throw new Error(data.error?.message || "API Error");
+                
+                let htmlContent = data.candidates[0].content.parts[0].text;
+                
+                // Cleanup any accidental markdown backticks from AI
+                htmlContent = htmlContent.replace(/```html/g, '').replace(/```/g, '');
+
+                loader.style.display = "none";
+                resultBox.innerHTML = htmlContent;
+                resultBox.style.display = "block";
+
+            } catch (error) {
+                loader.style.display = "none";
+                resultBox.innerHTML = `<h3 style="color:var(--red);">❌ Error Fetching Data</h3><p>${error.message}</p><p>Please check your Gemini API key in the code.</p>`;
+                resultBox.style.display = "block";
+            }
+        }
+    </script>
+
+    <!-- FIREBASE AUTHENTICATION LOGIC -->
     <script type="module">
-        // 1. Importing Firebase Modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 👇👇 YAHAN APNI FIREBASE CONFIGURATION PASTE KARIYE 👇👇
+        // Yahan Aapki Same Firebase Config
         const firebaseConfig = {
-            apiKey: "YOUR_FIREBASE_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+            authDomain: "pharmaai-hub-142f1.firebaseapp.com",
+            projectId: "pharmaai-hub-142f1",
+            storageBucket: "pharmaai-hub-142f1.firebasestorage.app",
+            messagingSenderId: "665986034172",
+            appId: "1:665986034172:web:6752ed83566cd6d015ea79",
+            measurementId: "G-E58BF7JT1P"
         };
-        // 👆👆 ================================================ 👆👆
 
-        // 2. Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
-        // 3. UI Elements ko JavaScript mein pakadna
         const loginBtn = document.getElementById("googleLoginBtn");
         const userProfile = document.getElementById("userProfile");
         const userNameDisplay = document.getElementById("userNameDisplay");
         const userProfilePic = document.getElementById("userProfilePic");
-        const userEmailDisplay = document.getElementById("userEmailDisplay");
 
-        // 4. Google Login Button Click Event
         loginBtn.addEventListener("click", () => {
-            signInWithPopup(auth, provider)
-                .then((result) => {
-                    const user = result.user;
-                    updateSidebarUI(user);
-                    saveUserDataToAdmin(user);
-                })
-                .catch((error) => {
-                    console.error("Login Failed:", error.message);
-                    alert("Login failed! " + error.message);
-                });
+            signInWithPopup(auth, provider).catch(err => console.error("Login Error:", err));
         });
 
-        // 5. Auto-Login Check (Agar user pehle se logged in hai toh page refresh hone par gayab na ho)
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                updateSidebarUI(user);
-                saveUserDataToAdmin(user); // Last login time update karne ke liye
+                loginBtn.style.display = "none"; 
+                userProfile.style.display = "flex"; 
+                userNameDisplay.innerText = user.displayName.split(" ")[0]; 
+                userProfilePic.src = user.photoURL;
             } else {
-                // Agar user logged out hai
                 loginBtn.style.display = "flex";
                 userProfile.style.display = "none";
             }
         });
-
-        // 6. UI Update Function (Naam aur Photo dikhana)
-        function updateSidebarUI(user) {
-            loginBtn.style.display = "none"; 
-            userProfile.style.display = "flex"; 
-            
-            // "Good afternoon, Name" jaisa feel dene ke liye
-            userNameDisplay.innerText = "Hi, " + user.displayName.split(" ")[0]; 
-            userEmailDisplay.innerText = user.email;
-            userProfilePic.src = user.photoURL;
-        }
-
-        // 7. Admin Tracking Function (Firestore Database mein data bhejna)
-        async function saveUserDataToAdmin(user) {
-            try {
-                // "users" naam ke database folder mein user ki ID se file banegi
-                const userRef = doc(db, "users", user.uid);
-                await setDoc(userRef, {
-                    name: user.displayName,
-                    email: user.email,
-                    photoURL: user.photoURL,
-                    lastLoginTime: new Date().toLocaleString("en-IN") // Indian Time
-                }, { merge: true }); // Merge se purana data delete nahi hoga
-                
-                console.log("User Data tracked in Firestore successfully!");
-            } catch (error) {
-                console.error("Tracking Error:", error);
-            }
-        }
     </script>
 </body>
 </html>
