@@ -1,100 +1,492 @@
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    // Naye imports add kiye gaye hain 👇
-    import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaAI Hub - Dashboard</title>
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+          --bg: #04060C;
+          --bg-panel: #0A0D16;
+          --card: rgba(255,255,255,0.035);
+          --card-border: rgba(88,140,255,0.20);
+          --card-border-strong: rgba(88,140,255,0.45);
+          --blue: #4C8DFF;
+          --blue-bright: #7AB0FF;
+          --cyan: #22D3EE;
+          --ink: #EAF0FB;
+          --ink-soft: #8C97B3;
+          --red: #FF6B6B;
+          --green: #34D399;
+          --purple: #A78BFA;
+        }
 
-    // ... (Aapki firebaseConfig aur initializeApp ka code yahan same rahega) ...
-
-    // 1. Search Save Karne Ka Logic
-    const dashSearchBtn = document.getElementById("dashSearchBtn");
-    const dashSearchInput = document.getElementById("dashSearchInput");
-
-    async function handleSearch() {
-        const searchTerm = dashSearchInput.value.trim();
-        if (!searchTerm) return;
-
-        const user = auth.currentUser;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        // Agar user logged in hai, toh pehle uski history Firestore mein save karo
-        if (user) {
-            try {
-                await addDoc(collection(db, "search_history"), {
-                    uid: user.uid,
-                    term: searchTerm,
-                    timestamp: serverTimestamp()
-                });
-            } catch (error) {
-                console.error("Error saving search history:", error);
-            }
+        /* Base Layout */
+        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; width: 100%; }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+        /* ===================== WELCOME LOGIN MODAL ===================== */
+        .welcome-overlay { position: fixed; inset: 0; background: rgba(4, 6, 12, 0.85); backdrop-filter: blur(8px); z-index: 20000; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.5s ease; }
+        .welcome-overlay.show { opacity: 1; visibility: visible; }
+        .welcome-modal { background: var(--bg-panel); border: 1px solid var(--card-border-strong); padding: 40px 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 15px 50px rgba(0,0,0,0.6); transform: translateY(30px) scale(0.95); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .welcome-overlay.show .welcome-modal { transform: translateY(0) scale(1); }
+        
+        .welcome-modal .brand-icon { width: 56px; height: 56px; font-size: 28px; margin: 0 auto 20px; box-shadow: 0 8px 20px rgba(34,211,238,0.2); border-radius: 14px; background: linear-gradient(135deg, var(--blue), var(--cyan)); display: flex; align-items: center; justify-content: center; }
+        .welcome-modal h2 { margin-bottom: 12px; font-size: 24px; color: var(--ink); }
+        .welcome-modal p { color: var(--ink-soft); font-size: 14px; margin-bottom: 30px; line-height: 1.6; }
+        .welcome-modal .login-btn { width: 100%; justify-content: center; padding: 14px; margin-bottom: 15px; font-size: 15px; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .skip-btn { color: var(--ink-soft); font-size: 13px; text-decoration: underline; transition: color 0.2s; }
+        .skip-btn:hover { color: var(--ink); }
+
+        /* ===================== SIDEBAR ===================== */
+        .sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        
+        /* Desktop Collapse State */
+        @media (min-width: 901px) {
+            .sidebar.collapsed { width: 0; padding-left: 0; padding-right: 0; border: none; opacity: 0; }
         }
         
-        // Save hone ke baad Drug Explorer page par le jao
-        window.location.href = `pharmarag.html?q=${encodeURIComponent(searchTerm)}`;
-    }
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; min-width: 200px;}
+        .brand h2 { color: var(--ink); font-size: 18px; margin: 0; }
+        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; display: block; }
+        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; flex-shrink: 0;}
+        
+        .navigation { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+        .nav-label { font-size: 11px; margin: 10px 0 5px; color: var(--ink-soft); letter-spacing: 0.06em; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; white-space: nowrap; font-weight: 500;}
+        .nav-icon { width: 18px; text-align: center; }
+        .nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
+        .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
 
-    // Search button aur Enter key dono par chalega
-    dashSearchBtn.addEventListener("click", handleSearch);
-    dashSearchInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") handleSearch();
-    });
+        /* Mobile Overlay */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.show { display: block; opacity: 1; }
 
-    // 2. Search History Fetch aur Display Karne Ka Logic
-    async function loadSearchHistory(user) {
-        const historyContainer = document.getElementById("historyContainer");
-        const historyHeading = document.getElementById("historyHeading");
-        historyContainer.innerHTML = ""; // Purani list clear karein
+        /* ===================== MAIN CONTENT ===================== */
+        .main-content { flex: 1; padding: 25px 35px; overflow-y: auto; width: 100%; min-width: 0; transition: width 0.3s; display: flex; flex-direction: column;}
+        
+        /* Topbar & Header */
+        .topbar { display: flex; align-items: center; margin-bottom: 30px; gap: 15px; width: 100%; }
+        .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
+        .topbar h1 { color: var(--ink); font-size: 22px; margin: 0; }
+        .top-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+        
+        .menu-toggle { display: flex; color: var(--ink); font-size: 20px; background: var(--card); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; align-items: center; justify-content: center; transition: 0.2s; }
+        .menu-toggle:hover { background: rgba(76,141,255,0.15); border-color: var(--card-border-strong); }
+        
+        /* User Auth UI */
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
+        .profile-info strong { color: var(--ink); font-size: 13px; }
+        .profile-info span { font-size: 11px; color: var(--ink-soft); }
+        .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
+        
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); white-space: nowrap; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
-        try {
-            // User ki ID ke hisaab se uska data nikalo
-            const q = query(collection(db, "search_history"), where("uid", "==", user.uid));
-            const querySnapshot = await getDocs(q);
+        /* ===================== HERO SECTION ===================== */
+        .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 35px; border-radius: 16px; margin-bottom: 30px; background: var(--card); border: 1px solid var(--card-border); }
+        .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 16px; background: rgba(76,141,255,0.14); color: var(--blue-bright); border: 1px solid var(--card-border); font-weight: 500;}
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .hero-content h2 { font-size: 34px; line-height: 1.2; margin-bottom: 14px; color: var(--ink); margin-top: 0; }
+        .hero-content h2 span { color: var(--blue-bright); }
+        .hero-content p { font-size: 15px; margin-bottom: 0; color: var(--ink-soft); line-height: 1.6;}
+
+        /* ===================== DASHBOARD SEARCH & HISTORY ===================== */
+        .dashboard-search { display: flex; gap: 12px; margin-bottom: 16px; }
+        .dashboard-search input { flex: 1; padding: 16px 20px; border-radius: 12px; border: 1px solid var(--card-border-strong); background: rgba(0,0,0,0.3); color: white; font-size: 15px; outline: none; font-family: inherit; transition: 0.3s; }
+        .dashboard-search input:focus { border-color: var(--cyan); box-shadow: 0 0 12px rgba(34,211,238,0.2); background: rgba(0,0,0,0.5);}
+        .dashboard-search input::placeholder { color: var(--ink-soft); }
+        .dashboard-search button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .dashboard-search button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+
+        .history-tag { background: var(--card); border: 1px solid var(--card-border); padding: 8px 16px; border-radius: 20px; font-size: 12px; color: var(--ink-soft); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .history-tag:hover { background: rgba(76,141,255,0.1); border-color: var(--card-border-strong); color: var(--blue-bright); transform: translateY(-1px);}
+
+        /* ===================== STATS (3 Columns) ===================== */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 35px; }
+        .stat-card { display: flex; align-items: center; gap: 16px; padding: 22px; border-radius: 16px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); border-color: var(--card-border-strong); box-shadow: 0 8px 24px rgba(0,0,0,0.2);}
+        .stat-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 20px; }
+        .stat-card span { display: block; font-size: 13px; color: var(--ink-soft); }
+        .stat-card strong { display: block; font-size: 22px; margin: 4px 0; color: var(--ink); font-family: 'Space Grotesk', sans-serif;}
+        .stat-card small { font-size: 11px; color: var(--ink-soft); }
+        
+        .stat-icon.blue { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+        .stat-icon.purple { background: rgba(167,139,250,0.16); color: var(--purple); }
+        .stat-icon.green { background: rgba(52,211,153,0.16); color: var(--green); }
+
+        /* ===================== MODULES ===================== */
+        .section-heading h2 { font-size: 20px; margin-bottom: 16px; color: var(--ink); margin-top: 0; }
+        .modules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 35px; }
+        .module-card { display: flex; flex-direction: column; padding: 25px; border-radius: 16px; background: var(--card); border: 1px solid var(--card-border); transition: 0.2s ease; cursor: pointer; }
+        .module-card:hover { border-color: var(--card-border-strong); transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.3);}
+        .module-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .module-icon { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .module-tag { display: inline-block; font-size: 10px; padding: 4px 10px; border-radius: 20px; margin-bottom: 12px; font-weight: 600; }
+        .module-content h3 { font-size: 18px; margin-bottom: 8px; color: var(--ink); margin-top: 0; }
+        .module-content p { font-size: 14px; color: var(--ink-soft); margin: 0; line-height: 1.5;}
+        
+        .module-icon.blue-bg { background: rgba(76,141,255,0.16); color: var(--blue-bright); }
+        .module-tag.blue-tag { background: rgba(76,141,255,0.14); color: var(--blue-bright); }
+        .module-icon.ai-bg { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; }
+        .module-tag.ai-tag { background: rgba(34,211,238,0.14); color: var(--cyan); }
+        .module-card.ai-card { border: 1px solid var(--card-border-strong); background: linear-gradient(145deg, rgba(76,141,255,0.08), rgba(34,211,238,0.05)); }
+
+        /* ===================== MOBILE RESPONSIVENESS FIX ===================== */
+        @media (max-width: 900px) {
+            /* Sidebar is hidden perfectly off-screen */
+            .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; height: 100vh; width: 260px; box-shadow: 10px 0 30px rgba(0,0,0,0.7); z-index: 10001;}
+            .sidebar.open { left: 0; }
             
-            let searches = [];
-            querySnapshot.forEach((doc) => {
-                searches.push(doc.data());
-            });
+            /* Main content takes full width, no overflow */
+            .main-content { padding: 15px; width: 100vw; overflow-x: hidden;}
+            .topbar { flex-wrap: wrap; gap: 10px; margin-bottom: 20px;}
+            .breadcrumb { display: none; } 
+            .profile-info { display: none; } 
+            
+            .dashboard-search { flex-direction: column; }
+            .dashboard-search button { padding: 16px; justify-content: center; }
 
-            // Latest search ko upar rakhne ke liye Time ke hisaab se sort karo
-            searches.sort((a, b) => {
-                const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
-                const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
-                return timeB - timeA;
-            });
+            .hero { flex-direction: column; text-align: center; padding: 25px 20px; }
+            .hero-content h2 { font-size: 26px; }
+            
+            .stats-grid { grid-template-columns: 1fr; gap: 15px; } /* Stack vertically on mobile */
+            .modules-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
 
-            // Agar history hai, tabhi section dikhao (Top 5 searches)
-            if (searches.length > 0) {
-                historyHeading.style.display = "flex";
-                historyContainer.style.display = "flex";
+    <!-- 1. ANIMATED WELCOME LOGIN MODAL -->
+    <div class="welcome-overlay" id="welcomeModalOverlay">
+        <div class="welcome-modal">
+            <div class="brand-icon">⚕️</div>
+            <h2>Welcome to PharmaAI</h2>
+            <p>Please sign in to access advanced AI modules, extract drug data, and track prescriptions instantly.</p>
+            
+            <button id="modalGoogleLoginBtn" class="login-btn">
+                <img src="https://www.google.com/favicon.ico" width="18" alt="G"> Sign in with Google
+            </button>
+            <button class="skip-btn" id="closeModalBtn">Maybe later, continue as guest</button>
+        </div>
+    </div>
 
-                searches.slice(0, 5).forEach((data) => {
-                    const tag = document.createElement("div");
-                    tag.className = "history-tag";
-                    tag.innerHTML = `🕒 ${data.term}`;
-                    
-                    // Tag par click karne se wapas wahi search ho jayegi
-                    tag.onclick = () => {
-                        window.location.href = `pharmarag.html?q=${encodeURIComponent(data.term)}`;
-                    };
-                    historyContainer.appendChild(tag);
+    <!-- 2. SIDEBAR STRUCTURE -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">⚕️</div>
+            <div>
+                <h2>PharmaAI</h2>
+                <span>HUB</span>
+            </div>
+        </div>
+        <nav class="navigation">
+            <div class="nav-label">MAIN MENU</div>
+            <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
+            <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
+        </nav>
+    </aside>
+
+    <!-- 3. MAIN WORKSPACE -->
+    <main class="main-content">
+        
+        <!-- Header -->
+        <header class="topbar">
+            <!-- Universal Menu Toggle -->
+            <button class="menu-toggle" id="menuBtn">☰</button>
+            
+            <div style="margin-left: 10px;">
+                <div class="breadcrumb">Overview / Dashboard</div>
+                <h1>Dashboard</h1>
+            </div>
+            
+            <div class="top-actions">
+                <button id="googleLoginBtn" class="login-btn">
+                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
+                </button>
+                
+                <div id="userProfile" class="profile" style="display: none;">
+                    <img id="userProfilePic" src="" alt="User" class="profile-avatar">
+                    <div class="profile-info">
+                        <strong id="userNameDisplay">Name</strong>
+                        <span>Authenticated</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Hero Greeting -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="status"><span class="status-dot"></span> All systems operational</div>
+                <!-- Dynamic Greeting -->
+                <h2 id="welcomeGreeting">Hello, <span>Guest</span></h2>
+                <p>An advanced AI platform for pharmacy students and professionals. Explore medical data, extract drug information, and read prescriptions instantly.</p>
+            </div>
+        </section>
+
+        <!-- Search Box -->
+        <div class="dashboard-search">
+            <input type="text" id="dashSearchInput" placeholder="Search drug name...">
+            <button id="dashSearchBtn">🔍 Search</button>
+        </div>
+
+        <!-- Recent Search History -->
+        <div class="section-heading" id="historyHeading" style="display: none; margin-top: 5px;">
+            <h2 style="font-size: 15px; color: var(--ink-soft);">Recent Searches</h2>
+        </div>
+        <div id="historyContainer" style="display: none; gap: 10px; flex-wrap: wrap; margin-bottom: 30px;">
+            <!-- History tags will appear here -->
+        </div>
+
+        <!-- 3 Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">💊</div>
+                <div><span>Medicines</span><strong>10,000+</strong><small>RxNorm Indexed</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">📄</div>
+                <div><span>Scans</span><strong>500+</strong><small>Prescriptions read</small></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">⚡</div>
+                <div><span>Uptime</span><strong>99.9%</strong><small>System Active</small></div>
+            </div>
+        </div>
+
+        <!-- Modules -->
+        <div class="section-heading">
+            <h2>Quick Access Modules</h2>
+        </div>
+
+        <div class="modules-grid">
+            <div class="module-card" onclick="window.location.href='pharmarag.html'">
+                <div class="module-header">
+                    <div class="module-icon blue-bg">💊</div>
+                    <span class="module-tag blue-tag">RAG System</span>
+                </div>
+                <div class="module-content">
+                    <h3>Drug Explorer</h3>
+                    <p>Search generic medicines, view structured indications, ADRs, and categorized dosage forms.</p>
+                </div>
+            </div>
+
+            <div class="module-card ai-card" onclick="window.location.href='chat.html'">
+                <div class="module-header">
+                    <div class="module-icon ai-bg">📄</div>
+                    <span class="module-tag ai-tag">AI Vision</span>
+                </div>
+                <div class="module-content">
+                    <h3>Smart Prescription Scanner</h3>
+                    <p>Upload handwritten prescriptions to instantly extract patient details and exact medicines.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: DOM UI LOGIC (BUG FREE)        -->
+    <!-- ========================================== -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const menuBtn = document.getElementById("menuBtn");
+            const sidebar = document.getElementById("sidebar");
+            const sidebarOverlay = document.getElementById("sidebarOverlay");
+            const welcomeModalOverlay = document.getElementById("welcomeModalOverlay");
+            const closeModalBtn = document.getElementById("closeModalBtn");
+
+            // Sidebar Toggle Logic
+            if (menuBtn && sidebar) {
+                menuBtn.addEventListener("click", () => {
+                    if (window.innerWidth > 900) {
+                        sidebar.classList.toggle("collapsed"); // PC Collapse
+                    } else {
+                        sidebar.classList.add("open"); // Mobile Slide
+                        if(sidebarOverlay) sidebarOverlay.classList.add("show");
+                    }
                 });
             }
-        } catch (error) {
-            console.error("Error loading history: ", error);
-        }
-    }
 
-    // 3. Auto-Login Observer (Yahan UI update ke sath History bhi load karni hai)
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            updateHeaderUI(user);
-            saveUserDataToAdmin(user);
-            loadSearchHistory(user); // NAYA: Login hote hi history load hogi
-            document.getElementById("welcomeModalOverlay").classList.remove("show");
-        } else {
-            // ... (Aapka logged-out wala same code)
-        }
-    });
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener("click", () => {
+                    sidebar.classList.remove("open");
+                    sidebarOverlay.classList.remove("show");
+                });
+            }
 
-    // ... (Baki purana updateHeaderUI aur saveUserDataToAdmin function same rahega)
-</script>
+            if (closeModalBtn && welcomeModalOverlay) {
+                closeModalBtn.addEventListener("click", () => {
+                    welcomeModalOverlay.classList.remove("show");
+                });
+            }
+        });
+    </script>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: FIREBASE AUTH & FIRESTORE      -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Your Firebase Setup
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+            authDomain: "pharmaai-hub-142f1.firebaseapp.com",
+            projectId: "pharmaai-hub-142f1",
+            storageBucket: "pharmaai-hub-142f1.firebasestorage.app",
+            messagingSenderId: "665986034172",
+            appId: "1:665986034172:web:6752ed83566cd6d015ea79"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const loginBtn = document.getElementById("googleLoginBtn");
+            const modalLoginBtn = document.getElementById("modalGoogleLoginBtn");
+            const userProfile = document.getElementById("userProfile");
+            const userNameDisplay = document.getElementById("userNameDisplay");
+            const userProfilePic = document.getElementById("userProfilePic");
+            const welcomeGreeting = document.getElementById("welcomeGreeting");
+
+            // 1. Authentication Logic
+            const handleLogin = () => {
+                signInWithPopup(auth, provider)
+                    .then((result) => {
+                        updateHeaderUI(result.user);
+                        saveUserDataToAdmin(result.user);
+                        loadSearchHistory(result.user);
+                        document.getElementById("welcomeModalOverlay").classList.remove("show");
+                    })
+                    .catch((error) => {
+                        console.error("Login Error:", error);
+                        alert("Login Error: Ensure your GitHub domain is allowed in Firebase Auth settings.");
+                    });
+            };
+
+            if(loginBtn) loginBtn.addEventListener("click", handleLogin);
+            if(modalLoginBtn) modalLoginBtn.addEventListener("click", handleLogin);
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    updateHeaderUI(user);
+                    saveUserDataToAdmin(user);
+                    loadSearchHistory(user);
+                    document.getElementById("welcomeModalOverlay").classList.remove("show");
+                } else {
+                    if(loginBtn) loginBtn.style.display = "flex";
+                    if(userProfile) userProfile.style.display = "none";
+                    if(welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>Guest</span>`;
+                    
+                    setTimeout(() => {
+                        const modal = document.getElementById("welcomeModalOverlay");
+                        if(modal) modal.classList.add("show");
+                    }, 500);
+                }
+            });
+
+            function updateHeaderUI(user) {
+                if(loginBtn) loginBtn.style.display = "none"; 
+                if(userProfile) userProfile.style.display = "flex"; 
+                const firstName = user.displayName ? user.displayName.split(" ")[0] : "User";
+                if(userNameDisplay) userNameDisplay.innerText = firstName; 
+                if(userProfilePic) userProfilePic.src = user.photoURL;
+                if(welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>${firstName}</span>`;
+            }
+
+            async function saveUserDataToAdmin(user) {
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    await setDoc(userRef, {
+                        name: user.displayName,
+                        email: user.email,
+                        photoURL: user.photoURL,
+                        lastLoginTime: new Date().toLocaleString("en-IN")
+                    }, { merge: true });
+                } catch (error) { console.error("Tracking Error:", error); }
+            }
+
+            // 2. Search & History Saving Logic
+            const dashSearchBtn = document.getElementById("dashSearchBtn");
+            const dashSearchInput = document.getElementById("dashSearchInput");
+
+            async function handleSearch() {
+                if(!dashSearchInput) return;
+                const searchTerm = dashSearchInput.value.trim();
+                if (!searchTerm) return;
+
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        await addDoc(collection(db, "search_history"), {
+                            uid: user.uid,
+                            term: searchTerm,
+                            timestamp: serverTimestamp()
+                        });
+                    } catch (error) { console.error("History Save Error:", error); }
+                }
+                window.location.href = `pharmarag.html?q=${encodeURIComponent(searchTerm)}`;
+            }
+
+            if(dashSearchBtn) dashSearchBtn.addEventListener("click", handleSearch);
+            if(dashSearchInput) {
+                dashSearchInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") handleSearch();
+                });
+            }
+
+            // 3. Fetch History Logic
+            async function loadSearchHistory(user) {
+                const historyContainer = document.getElementById("historyContainer");
+                const historyHeading = document.getElementById("historyHeading");
+                if(!historyContainer || !historyHeading) return;
+                
+                historyContainer.innerHTML = ""; 
+
+                try {
+                    const q = query(collection(db, "search_history"), where("uid", "==", user.uid));
+                    const querySnapshot = await getDocs(q);
+                    
+                    let searches = [];
+                    querySnapshot.forEach((doc) => { searches.push(doc.data()); });
+
+                    searches.sort((a, b) => {
+                        const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
+                        const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
+                        return timeB - timeA;
+                    });
+
+                    if (searches.length > 0) {
+                        historyHeading.style.display = "flex";
+                        historyContainer.style.display = "flex";
+
+                        searches.slice(0, 5).forEach((data) => {
+                            const tag = document.createElement("div");
+                            tag.className = "history-tag";
+                            tag.innerHTML = `🕒 ${data.term}`;
+                            tag.onclick = () => window.location.href = `pharmarag.html?q=${encodeURIComponent(data.term)}`;
+                            historyContainer.appendChild(tag);
+                        });
+                    }
+                } catch (error) { console.error("Load History Error:", error); }
+            }
+        });
+    </script>
+</body>
+</html>
