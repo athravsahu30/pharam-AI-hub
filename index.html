@@ -1,565 +1,176 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<meta name="description" content="PharmaAI Hub - AI-powered pharmaceutical learning and drug intelligence dashboard">
-<meta name="author" content="Athrav Sahu">
-
-<title>PharmaAI Hub | Pharmaceutical Intelligence</title>
-
-<link rel="stylesheet" href="style.css">
-
-<!-- Google Font -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-
+    <title>PharmaAI Hub - Dashboard</title>
+    <style>
+        /* Professional Pharma UI Styling */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f8ff; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Styling */
+        .sidebar { width: 260px; background: linear-gradient(180deg, #0056b3, #004494); color: white; padding: 25px 20px; display: flex; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .sidebar-header { font-size: 22px; font-weight: bold; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
+        .nav-links { list-style: none; padding: 0; margin: 0; }
+        .nav-links li { padding: 12px 15px; margin-bottom: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: 500; }
+        .nav-links li:hover { background: rgba(255,255,255,0.2); }
+        .nav-links li.active { background: #009688; border-left: 4px solid white; }
+        
+        /* Main Content & Header */
+        .main-container { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        .header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .header-title { color: #0056b3; font-size: 20px; font-weight: bold; margin: 0; }
+        
+        /* Top Actions Section (Auth) */
+        .top-actions { display: flex; align-items: center; gap: 15px; }
+        
+        .login-btn { background: #009688; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(0, 150, 136, 0.3); }
+        .login-btn:hover { background: #00796b; transform: translateY(-1px); }
+        
+        /* User Profile in Header */
+        .user-profile { display: none; align-items: center; gap: 10px; background: #e8f0fe; padding: 6px 15px 6px 6px; border-radius: 30px; border: 1px solid #cce0ff; cursor: pointer; }
+        .user-profile img { width: 35px; height: 35px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .user-details { font-size: 14px; font-weight: bold; color: #0056b3; }
+        
+        /* Dashboard Content */
+        .content { padding: 30px; }
+        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 86, 179, 0.1); border: 1px solid #e0eaf5; }
+    </style>
 </head>
-
 <body>
 
-<!-- ================= PAGE LOADER ================= -->
-<div class="page-loader" id="pageLoader">
-    <div class="loader-mark">✚</div>
-</div>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">⚕️ PharmaAI Hub</div>
+        <ul class="nav-links">
+            <li class="active">📊 Dashboard</li>
+            <li onclick="window.location.href='pharmarag.html'">💊 Drug Explorer</li>
+            <li onclick="window.location.href='chat.html'">📄 Smart Prescription</li>
+        </ul>
+    </div>
 
-<!-- ================= SIDEBAR OVERLAY (mobile) ================= -->
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- Main Workspace -->
+    <div class="main-container">
+        
+        <!-- Header with Top Actions -->
+        <div class="header">
+            <h1 class="header-title">Welcome to Dashboard</h1>
+            
+            <div class="top-actions">
+                <!-- Login Button -->
+                <button id="googleLoginBtn" class="login-btn">
+                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in with Google
+                </button>
+                
+                <!-- Logged-in Profile View -->
+                <div id="userProfile" class="user-profile">
+                    <img id="userProfilePic" src="" alt="User">
+                    <span id="userNameDisplay" class="user-details">Name</span>
+                </div>
+            </div>
+        </div>
 
-<!-- ================= SIDEBAR ================= -->
-<aside class="sidebar" id="sidebar">
-
-    <div class="brand">
-        <div class="brand-icon">✚</div>
-
-        <div>
-            <h2>PharmaAI</h2>
-            <span>HUB</span>
+        <!-- Dashboard Content -->
+        <div class="content">
+            <div class="card">
+                <h2>Overview</h2>
+                <p>Welcome to the PharmaAI Hub. Please sign in using the button in the top right corner to authenticate your session and access advanced features.</p>
+            </div>
         </div>
     </div>
 
-    <nav class="navigation">
-
-        <p class="nav-label">MAIN</p>
-
-        <a href="#" class="nav-item active">
-            <span class="nav-icon">⌂</span>
-            Dashboard
-        </a>
-
-        <a href="#" class="nav-item">
-            <span class="nav-icon">⌕</span>
-            Drug Explorer
-        </a>
-
-        <a href="chat.html" class="nav-item">
-            <span class="nav-icon">📷</span>
-            Prescription Reader
-        </a>
-
-        <a href="#" class="nav-item">
-            <span class="nav-icon">⚕</span>
-            ADR Learning
-        </a>
-
-        <a href="#" class="nav-item">
-            <span class="nav-icon">◈</span>
-            Pharmacokinetics
-        </a>
-
-        <p class="nav-label">AI TOOLS</p>
-
-        <a href="pharmarag.html" class="nav-item">
-            <span class="nav-icon">✦</span>
-            PharmaRAG
-            <span class="coming">Beta</span>
-        </a>
-
-        <a href="#" class="nav-item">
-            <span class="nav-icon">▣</span>
-            Research
-        </a>
-
-        <p class="nav-label">ACCOUNT</p>
-
-        <a href="#" class="nav-item">
-            <span class="nav-icon">⚙</span>
-            Settings
-        </a>
-
-    </nav>
-
-    <div class="sidebar-bottom">
-        <div class="developer-card">
-            <div class="developer-avatar">AS</div>
-
-            <div>
-                <strong>Athrav Sahu</strong>
-                <small>B.Pharm + AI</small>
-            </div>
-
-            <span>⋮</span>
-        </div>
-    </div>
-
-</aside>
-
-
-<!-- ================= MAIN CONTENT ================= -->
-<main class="main-content">
-
-    <!-- TOP BAR -->
-    <header class="topbar">
-
-        <div style="display:flex; align-items:center; gap:14px;">
-            <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
-            <div>
-                <p class="breadcrumb">Workspace / Dashboard</p>
-                <h1>Good afternoon, Athrav 👋</h1>
-            </div>
-        </div>
-
-        <div class="top-actions">
-
-            <button class="icon-button" aria-label="Notifications">
-                ♧
-            </button>
-
-            <div class="profile">
-                <div class="profile-avatar">AS</div>
-
-                <div class="profile-info">
-                    <strong>Athrav Sahu</strong>
-                    <span>B.Pharm Student</span>
-                </div>
-            </div>
-
-        </div>
-
-    </header>
-
-
-    <!-- ================= HERO ================= -->
-    <section class="hero anim-in">
-
-        <div class="hero-content">
-
-            <div class="status">
-                <span class="status-dot"></span>
-                AI-Powered Pharmaceutical Intelligence
-            </div>
-
-            <h2>
-                Explore medicines.<br>
-                <span>Learn smarter.</span>
-            </h2>
-
-            <p>
-                Search drugs, understand mechanisms, explore ADRs
-                and build your pharmaceutical knowledge with AI.
-            </p>
-
-            <!-- DRUG SEARCH -->
-            <div class="search-container">
-
-                <span class="search-icon">⌕</span>
-
-                <input
-                    type="text"
-                    id="drugInput"
-                    placeholder="Search a drug... e.g. Paracetamol"
-                    autocomplete="off"
-                >
-
-                <button id="searchBtn">
-                    Search
-                    <span>→</span>
-                </button>
-
-            </div>
-
-            <p id="resultText" class="search-result"></p>
-
-            <div class="popular-searches">
-                <span>Popular:</span>
-
-                <button type="button" onclick="setDrug('Paracetamol')">
-                    Paracetamol
-                </button>
-
-                <button type="button" onclick="setDrug('Amoxicillin')">
-                    Amoxicillin
-                </button>
-
-                <button type="button" onclick="setDrug('Ibuprofen')">
-                    Ibuprofen
-                </button>
-
-            </div>
-
-        </div>
-
-        <div class="hero-visual">
-
-            <div class="orb orb-one"></div>
-            <div class="orb orb-two"></div>
-
-            <div class="molecule-card">
-
-                <div class="molecule-top">
-                    <span>AI INSIGHT</span>
-                    <span class="live-dot"></span>
-                </div>
-
-                <div class="molecule-symbol">
-                    <span>Rx</span>
-                </div>
-
-                <h3>Pharmaceutical Intelligence</h3>
-
-                <p>
-                    Connecting drug knowledge with
-                    intelligent learning.
-                </p>
-
-                <div class="molecule-lines">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ================= STATS ================= -->
-    <section class="stats-grid anim-stagger">
-
-        <div class="stat-card">
-            <div class="stat-icon blue">⚕</div>
-
-            <div>
-                <span>Drug Database</span>
-                <strong>1,200+</strong>
-                <small>Medicines available</small>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon purple">✦</div>
-
-            <div>
-                <span>AI Knowledge</span>
-                <strong>10K+</strong>
-                <small>Pharma concepts</small>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon green">✓</div>
-
-            <div>
-                <span>Learning Modules</span>
-                <strong>06</strong>
-                <small>Interactive modules</small>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon orange">↗</div>
-
-            <div>
-                <span>Project Status</span>
-                <strong>Beta</strong>
-                <small>Actively developing</small>
-            </div>
-        </div>
-
-    </section>
-
-
-    <!-- ================= MODULE HEADER ================= -->
-    <div class="section-heading">
-
-        <div>
-            <span class="eyebrow">EXPLORE</span>
-            <h2>Pharmaceutical Modules</h2>
-            <p>Tools designed for smarter B.Pharm learning.</p>
-        </div>
-
-        <button class="view-all">
-            View all →
-        </button>
-
-    </div>
-
-
-    <!-- ================= MODULES ================= -->
-    <section class="modules-grid anim-stagger">
-
-        <!-- Prescription Reader -->
-        <a href="chat.html" style="text-decoration:none; color:inherit;">
-        <article class="module-card">
-
-            <div class="module-header">
-                <div class="module-icon blue-bg">📷</div>
-
-                <span class="arrow">↗</span>
-            </div>
-
-            <div class="module-content">
-
-                <span class="module-tag blue-tag">
-                    AI TOOL
-                </span>
-
-                <h3>Prescription Reader</h3>
-
-                <p>
-                    Scan a prescription with your camera and
-                    instantly extract the text — free, on-device OCR.
-                </p>
-
-            </div>
-
-            <div class="module-footer">
-                <span>No API key needed</span>
-                <span>Scan →</span>
-            </div>
-
-        </article>
-        </a>
-
-
-        <!-- Drug Explorer -->
-        <article class="module-card">
-
-            <div class="module-header">
-                <div class="module-icon blue-bg">⌕</div>
-
-                <span class="arrow">↗</span>
-            </div>
-
-            <div class="module-content">
-
-                <span class="module-tag blue-tag">
-                    PHARMACOLOGY
-                </span>
-
-                <h3>Drug Explorer</h3>
-
-                <p>
-                    Explore drug classes, mechanisms,
-                    indications, dosage and pharmacological profiles.
-                </p>
-
-            </div>
-
-            <div class="module-footer">
-                <span>1,200+ drugs</span>
-                <span>Explore →</span>
-            </div>
-
-        </article>
-
-
-        <!-- ADR -->
-        <article class="module-card">
-
-            <div class="module-header">
-                <div class="module-icon red-bg">⚠</div>
-
-                <span class="arrow">↗</span>
-            </div>
-
-            <div class="module-content">
-
-                <span class="module-tag red-tag">
-                    SAFETY
-                </span>
-
-                <h3>ADR Learning</h3>
-
-                <p>
-                    Understand adverse drug reactions,
-                    severity, mechanisms and clinical management.
-                </p>
-
-            </div>
-
-            <div class="module-footer">
-                <span>Clinical safety</span>
-                <span>Learn →</span>
-            </div>
-
-        </article>
-
-
-        <!-- Pharmacokinetics -->
-        <article class="module-card">
-
-            <div class="module-header">
-                <div class="module-icon purple-bg">◈</div>
-
-                <span class="arrow">↗</span>
-            </div>
-
-            <div class="module-content">
-
-                <span class="module-tag purple-tag">
-                    PK / PD
-                </span>
-
-                <h3>Pharmacokinetics</h3>
-
-                <p>
-                    Learn ADME, half-life, bioavailability,
-                    clearance and drug concentration concepts.
-                </p>
-
-            </div>
-
-            <div class="module-footer">
-                <span>ADME concepts</span>
-                <span>Explore →</span>
-            </div>
-
-        </article>
-
-
-        <!-- PharmaRAG -->
-        <a href="pharmarag.html" style="text-decoration:none; color:inherit;">
-        <article class="module-card ai-card">
-
-            <div class="module-header">
-
-                <div class="module-icon ai-bg">✦</div>
-
-                <span class="coming-badge">BETA</span>
-
-            </div>
-
-            <div class="module-content">
-
-                <span class="module-tag ai-tag">
-                    ARTIFICIAL INTELLIGENCE
-                </span>
-
-                <h3>PharmaRAG</h3>
-
-                <p>
-                    Ask questions about drugs — uses, side effects,
-                    dosage, and interactions — in a chat interface.
-                </p>
-
-            </div>
-
-            <div class="module-footer">
-                <span>AI Research Assistant</span>
-                <span>Chat now →</span>
-            </div>
-
-        </article>
-        </a>
-
-    </section>
-
-
-    <!-- ================= AI BANNER ================= -->
-    <section class="ai-banner">
-
-        <div class="ai-banner-icon">✦</div>
-
-        <div class="ai-banner-content">
-
-            <span>THE FUTURE OF PHARMA LEARNING</span>
-
-            <h2>
-                Pharmaceutical knowledge,
-                powered by AI.
-            </h2>
-
-            <p>
-                PharmaAI Hub is being built to combine
-                pharmaceutical education with modern AI technology.
-            </p>
-
-        </div>
-
-        <a href="pharmarag.html" class="ai-button" style="text-decoration:none; display:inline-block;">
-            Explore PharmaRAG →
-        </a>
-
-    </section>
-
-
-    <!-- ================= FOOTER ================= -->
-    <footer>
-
-        <div>
-            <strong>PharmaAI Hub</strong>
-            <span> • </span>
-            Built for pharmaceutical learning.
-        </div>
-
-        <div>
-            © 2026 Athrav Sahu
-        </div>
-
-    </footer>
-
-</main>
-
-
-<!-- ================= SCRIPT ================= -->
-<script src="pharma-data.js"></script>
-<script src="app.js?v=4"></script>
-
-<script>
-    function setDrug(drugName) {
-        const input = document.getElementById("drugInput");
-
-        input.value = drugName;
-        input.focus();
-    }
-
-    // Page loader — hides once everything is ready
-    window.addEventListener("load", function () {
-        setTimeout(function () {
-            document.getElementById("pageLoader").classList.add("hidden");
-        }, 350);
-    });
-
-    // Mobile hamburger menu
-    const sidebarEl = document.getElementById("sidebar");
-    const overlayEl = document.getElementById("sidebarOverlay");
-    const menuToggleEl = document.getElementById("menuToggle");
-
-    function openSidebar() {
-        sidebarEl.classList.add("open");
-        overlayEl.classList.add("show");
-    }
-    function closeSidebar() {
-        sidebarEl.classList.remove("open");
-        overlayEl.classList.remove("show");
-    }
-
-    menuToggleEl.addEventListener("click", function () {
-        sidebarEl.classList.contains("open") ? closeSidebar() : openSidebar();
-    });
-    overlayEl.addEventListener("click", closeSidebar);
-
-    // Close sidebar automatically when a nav link is tapped (mobile)
-    document.querySelectorAll(".nav-item").forEach(function (link) {
-        link.addEventListener("click", closeSidebar);
-    });
-</script>
-
+    <!-- ========================================== -->
+    <!-- FIREBASE SDKs & AUTHENTICATION LOGIC       -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 👇 YAHAN APNI FIREBASE CONFIGURATION PASTE KARIYE 👇
+      // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+  authDomain: "pharmaai-hub-142f1.firebaseapp.com",
+  projectId: "pharmaai-hub-142f1",
+  storageBucket: "pharmaai-hub-142f1.firebasestorage.app",
+  messagingSenderId: "665986034172",
+  appId: "1:665986034172:web:6752ed83566cd6d015ea79",
+  measurementId: "G-E58BF7JT1P"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+        };
+        // 👆 ================================================ 👆
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        const loginBtn = document.getElementById("googleLoginBtn");
+        const userProfile = document.getElementById("userProfile");
+        const userNameDisplay = document.getElementById("userNameDisplay");
+        const userProfilePic = document.getElementById("userProfilePic");
+
+        // Login Click Handler
+        loginBtn.addEventListener("click", () => {
+            signInWithPopup(auth, provider)
+                .then((result) => {
+                    const user = result.user;
+                    updateHeaderUI(user);
+                    saveUserDataToAdmin(user);
+                })
+                .catch((error) => {
+                    console.error("Login Failed:", error.message);
+                    alert("Authentication failed! " + error.message);
+                });
+        });
+
+        // Auto-Login Observer
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                updateHeaderUI(user);
+                saveUserDataToAdmin(user);
+            } else {
+                loginBtn.style.display = "flex";
+                userProfile.style.display = "none";
+            }
+        });
+
+        // UI Updater Function
+        function updateHeaderUI(user) {
+            loginBtn.style.display = "none"; 
+            userProfile.style.display = "flex"; 
+            userNameDisplay.innerText = user.displayName; 
+            userProfilePic.src = user.photoURL;
+        }
+
+        // Firestore Database Tracking Function
+        async function saveUserDataToAdmin(user) {
+            try {
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    name: user.displayName,
+                    email: user.email,
+                    photoURL: user.photoURL,
+                    lastLoginTime: new Date().toLocaleString("en-IN")
+                }, { merge: true });
+                console.log("Admin Data: User tracked successfully!");
+            } catch (error) {
+                console.error("Admin Tracking Error:", error);
+            }
+        }
+    </script>
 </body>
 </html>
