@@ -113,6 +113,7 @@
             <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="#" class="nav-item active"><span class="nav-icon">📄</span> AI Prescription</a>
+            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
@@ -123,6 +124,7 @@
         <header class="topbar">
             <button class="menu-toggle" id="menuBtn">☰</button>
             <div style="margin-left: 10px;">
+                <a href="index.html" style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--blue-bright); margin-bottom:4px;">← Back to Dashboard</a>
                 <div class="breadcrumb">Modules / AI Scanner</div>
                 <h1>Smart Prescription</h1>
             </div>
@@ -144,7 +146,7 @@
         <div class="scanner-container">
             <div class="scanner-header">
                 <h2>AI Prescription Reader</h2>
-                <p>Upload a handwritten medical prescription. Our AI will clean up the handwriting and extract exact medicines and dosages.</p>
+                <p>Upload a handwritten medical prescription. Gemini AI reads the handwriting and extracts doctor details, medicines, and dosages — works with Hindi + English too.</p>
             </div>
 
             <div class="upload-area" id="uploadArea">
@@ -163,6 +165,7 @@
             <!-- Loading Shimmer -->
             <div class="loader" id="loader">
                 <div class="skeleton-line title"></div>
+                <p id="ocrProgress" style="font-size:13px; color:var(--cyan); margin-bottom:12px;">AI is reading your prescription…</p>
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line" style="width: 70%;"></div>
@@ -202,12 +205,12 @@
             }
 
             // ==========================================
-            // GEMINI VISION API LOGIC (IMPROVED)
+            // GEMINI VISION API LOGIC (Sept 2026 — current model + AQ key auth)
             // ==========================================
-            
-            // 👇👇 YAHAN APNI GEMINI API KEY DAALEIN 👇👇
-            const GEMINI_API_KEY = "AQ.Ab8RN6L8cpL81FCO5EnMKRfdeomDqzx4zcgrLceHLk_2wvNJQA"; 
-            // (Example: "AIzaSy...")
+
+            // 👇👇 YAHAN APNI NAYI (AQ...) GEMINI API KEY DAALEIN 👇👇
+            const GEMINI_API_KEY = "AQ.Ab8RN6Lz8zuNZiQulK-6dg7jV5wRGiUY4EBpLpPt5KM74sNGRA";
+            const GEMINI_MODEL = "gemini-3.8-flash"; // gemini-1.5-flash is shut down (404) as of 2026
 
             const imageInput = document.getElementById("imageInput");
             const imagePreview = document.getElementById("imagePreview");
@@ -226,31 +229,24 @@
                     mimeType = file.type;
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        // Show Preview
                         imagePreview.src = event.target.result;
                         previewContainer.style.display = "block";
                         uploadArea.style.display = "none";
                         scanBtn.style.display = "flex";
                         resultBox.style.display = "none";
-                        
-                        // HIGH QUALITY IMAGE COMPRESSION (Fixed Garbage Text Issue)
+
                         const img = new Image();
                         img.onload = function() {
                             const canvas = document.createElement("canvas");
                             const ctx = canvas.getContext("2d");
-                            
-                            // Increased resolution for clear OCR reading
-                            const MAX_WIDTH = 1500; 
+                            const MAX_WIDTH = 1500;
                             let scaleSize = 1;
                             if (img.width > MAX_WIDTH) {
                                 scaleSize = MAX_WIDTH / img.width;
                             }
-                            
                             canvas.width = img.width * scaleSize;
                             canvas.height = img.height * scaleSize;
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            
-                            // High quality JPEG output
                             base64Image = canvas.toDataURL(mimeType, 0.9).split(',')[1];
                         }
                         img.src = event.target.result;
@@ -262,13 +258,18 @@
             scanBtn.addEventListener("click", async function() {
                 if (!base64Image) return;
 
-                scanBtn.style.display = "none"; 
-                loader.style.display = "block"; 
+                if (GEMINI_API_KEY === "PASTE_YOUR_AQ_API_KEY_HERE") {
+                    resultBox.innerHTML = `<span class="error-text">⚠️ API key set nahi hai.</span> Google AI Studio (aistudio.google.com/apikey) se apni key lekar code me GEMINI_API_KEY wali line me paste karo.`;
+                    resultBox.style.display = "block";
+                    return;
+                }
+
+                scanBtn.style.display = "none";
+                loader.style.display = "block";
                 resultBox.style.display = "none";
 
-                // STRICT MEDICAL PROMPT (Prevents hallucination and garbage text)
-                const promptText = `You are an expert pharmacist and medical professional. Your task is to accurately read and transcribe this handwritten medical prescription. 
-                Do NOT output random characters or garbage text. 
+                const promptText = `You are an expert pharmacist and medical professional. Your task is to accurately read and transcribe this handwritten medical prescription.
+                Do NOT output random characters or garbage text.
                 Extract the data into this EXACT HTML format:
                 <h3>🏥 Clinic / Doctor Details</h3>
                 <p>Extract doctor name, clinic name, and date if visible.</p>
@@ -278,13 +279,16 @@
                 </ul>
                 <h3>📝 Additional Advice</h3>
                 <p>Extract any notes like "Rest for 2 days" or "Bring prescription for next visit".</p>
-                
+
                 If a specific word is completely illegible, write <span class="error-text">[Illegible]</span>. Output ONLY clean HTML, no markdown backticks.`;
 
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: {
+                            "Content-Type": "application/json",
+                            "x-goog-api-key": GEMINI_API_KEY
+                        },
                         body: JSON.stringify({
                             contents: [{
                                 parts: [
@@ -296,18 +300,16 @@
                     });
 
                     const data = await response.json();
-                    loader.style.display = "none"; 
-                    scanBtn.style.display = "flex"; 
-                    
+                    loader.style.display = "none";
+                    scanBtn.style.display = "flex";
+
                     if (!response.ok) {
-                        throw new Error(data.error.message || "API Error");
+                        throw new Error((data.error && data.error.message) || "API Error");
                     }
 
                     if (data.candidates && data.candidates[0].content.parts[0].text) {
                         let aiResponse = data.candidates[0].content.parts[0].text;
-                        // Clean up markdown if AI accidentally adds it
-                        aiResponse = aiResponse.replace(/```html/g, '').replace(/```/g, ''); 
-                        
+                        aiResponse = aiResponse.replace(/```html/g, '').replace(/```/g, '');
                         resultBox.innerHTML = aiResponse;
                         resultBox.style.display = "block";
                     } else {
@@ -316,8 +318,8 @@
 
                 } catch (error) {
                     loader.style.display = "none";
-                    scanBtn.style.display = "flex"; 
-                    resultBox.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span> <br><br> Please check your Gemini API Key or upload a clearer photo.`;
+                    scanBtn.style.display = "flex";
+                    resultBox.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span> <br><br> Apni API key check karein, ya photo clearly wapas khichein.`;
                     resultBox.style.display = "block";
                 }
             });
