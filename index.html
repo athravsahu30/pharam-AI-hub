@@ -161,6 +161,7 @@
             <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
+            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
@@ -286,11 +287,12 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Yahan tumhari nai API Key lagai gayi hai
-        const GEMINI_API_KEY = "AQ.Ab8RN6Jt1UwQgFikyRgNQAL1oJqL23h8Wes_3coBfu1UjaeNWA"; 
-        
+        const GEMINI_API_KEY = "AQ.Ab8RN6Jt1UwQgFikyRgNQAL1oJqL23h8Wes_3coBfu1UjaeNWA";
+        const GEMINI_MODEL = "gemini-2.5-flash";
+
         const firebaseConfig = {
             apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
             authDomain: "pharmaai-hub-142f1.firebaseapp.com",
@@ -312,27 +314,66 @@
             const userNameDisplay = document.getElementById("userNameDisplay");
             const userProfilePic = document.getElementById("userProfilePic");
             const welcomeGreeting = document.getElementById("welcomeGreeting");
+            const welcomeModalOverlay = document.getElementById("welcomeModalOverlay");
 
             const aiLoader = document.getElementById("aiLoader");
             const aiResultBox = document.getElementById("aiResultBox");
             const dashSearchBtn = document.getElementById("dashSearchBtn");
             const dashSearchInput = document.getElementById("dashSearchInput");
+            const historyHeading = document.getElementById("historyHeading");
+            const historyContainer = document.getElementById("historyContainer");
+
+            const HISTORY_KEY = "pharmaai_search_history";
+
+            function getHistory() {
+                try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+                catch (e) { return []; }
+            }
+
+            function saveToHistory(term) {
+                let history = getHistory().filter(h => h.toLowerCase() !== term.toLowerCase());
+                history.unshift(term);
+                history = history.slice(0, 6);
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                renderHistory();
+            }
+
+            function renderHistory() {
+                const history = getHistory();
+                if (!historyContainer || !historyHeading) return;
+                if (!history.length) {
+                    historyHeading.style.display = "none";
+                    historyContainer.style.display = "none";
+                    return;
+                }
+                historyHeading.style.display = "block";
+                historyContainer.style.display = "flex";
+                historyContainer.innerHTML = history.map(term =>
+                    `<span class="history-tag" data-term="${term}">🕒 ${term}</span>`
+                ).join("");
+                historyContainer.querySelectorAll(".history-tag").forEach(tag => {
+                    tag.addEventListener("click", () => {
+                        dashSearchInput.value = tag.dataset.term;
+                        performAISearch(tag.dataset.term);
+                    });
+                });
+            }
 
             async function performAISearch(searchTerm) {
                 if (!searchTerm) return;
-                
+
                 aiResultBox.style.display = "none";
                 aiLoader.style.display = "block";
 
-                const prompt = `You are an expert pharmacist. Provide detailed information for the medicine: "${searchTerm}". 
-                Strictly format the output in clean HTML. 
-                Include: 1. Generic Name & RxNorm match. 2. Uses/Indications (use proper commas between diseases). 3. Detailed Side Effects. 4. Adverse Drug Reactions (ADR). 5. Dosage Forms categorized for: Child, Adult, Old People. 
+                const prompt = `You are an expert pharmacist. Provide detailed information for the medicine: "${searchTerm}".
+                Strictly format the output in clean HTML.
+                Include: 1. Generic Name & RxNorm match. 2. Uses/Indications (use proper commas between diseases). 3. Detailed Side Effects. 4. Adverse Drug Reactions (ADR). 5. Dosage Forms categorized for: Child, Adult, Old People.
                 Use headings (<h3>), bold text (<b>), and bullet points (<ul><li>). No markdown.`;
 
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent`, {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
                         method: "POST",
-                        headers: { 
+                        headers: {
                             "Content-Type": "application/json",
                             "x-goog-api-key": GEMINI_API_KEY
                         },
@@ -340,7 +381,84 @@
                     });
 
                     const data = await response.json();
-                    if(!response.ok) throw new Error(data.error?.message || "API Error");
-                    
+                    if (!response.ok) throw new Error(data.error?.message || "API Error");
+
                     let htmlContent = data.candidates[0].content.parts[0].text;
-                    htmlContent = htmlContent.replace(/```html/g, '').replace(/
+                    htmlContent = htmlContent.replace(/```html/g, '').replace(/```/g, '');
+
+                    aiLoader.style.display = "none";
+                    aiResultBox.innerHTML = htmlContent;
+                    aiResultBox.style.display = "block";
+
+                    saveToHistory(searchTerm);
+                } catch (error) {
+                    aiLoader.style.display = "none";
+                    aiResultBox.innerHTML = `<h3 class="error-text">❌ Error Fetching Data</h3><p>${error.message}</p>`;
+                    aiResultBox.style.display = "block";
+                }
+            }
+
+            if (dashSearchBtn && dashSearchInput) {
+                dashSearchBtn.addEventListener("click", () => performAISearch(dashSearchInput.value.trim()));
+                dashSearchInput.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") performAISearch(dashSearchInput.value.trim());
+                });
+            }
+
+            renderHistory();
+
+            // ---- Google Sign-in (top bar + welcome modal) ----
+            function doLogin() {
+                signInWithPopup(auth, provider).catch(err => console.error("Login Error:", err));
+            }
+            if (loginBtn) loginBtn.addEventListener("click", doLogin);
+            if (modalLoginBtn) modalLoginBtn.addEventListener("click", doLogin);
+
+            if (userProfile) {
+                userProfile.addEventListener("click", () => {
+                    if (confirm("Do you want to sign out?")) {
+                        signOut(auth).then(() => window.location.reload()).catch(err => console.error(err));
+                    }
+                });
+            }
+
+            async function saveUserToFirestore(user) {
+                try {
+                    await setDoc(doc(db, "users", user.uid), {
+                        name: user.displayName || "Unknown",
+                        email: user.email || "",
+                        photoURL: user.photoURL || "",
+                        lastLoginTime: serverTimestamp()
+                    }, { merge: true });
+                } catch (err) {
+                    console.error("Could not save user to Firestore:", err);
+                }
+            }
+
+            let welcomeModalShown = false;
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    if (loginBtn) loginBtn.style.display = "none";
+                    if (userProfile) userProfile.style.display = "flex";
+                    if (userNameDisplay) userNameDisplay.innerText = user.displayName.split(" ")[0];
+                    if (userProfilePic) userProfilePic.src = user.photoURL;
+                    if (welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>${user.displayName.split(" ")[0]}</span>`;
+                    if (welcomeModalOverlay) welcomeModalOverlay.classList.remove("show");
+                    saveUserToFirestore(user);
+                } else {
+                    if (loginBtn) loginBtn.style.display = "flex";
+                    if (userProfile) userProfile.style.display = "none";
+                    if (welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>Guest</span>`;
+
+                    // Show the sign-in popup with its animation on first visit for guests
+                    if (!welcomeModalShown && welcomeModalOverlay) {
+                        welcomeModalShown = true;
+                        setTimeout(() => welcomeModalOverlay.classList.add("show"), 400);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
