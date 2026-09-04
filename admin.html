@@ -1,9 +1,171 @@
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaAI Hub - Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+          --bg: #04060C; --bg-panel: #0A0D16;
+          --card: rgba(255,255,255,0.035); --card-border: rgba(88,140,255,0.20); --card-border-strong: rgba(88,140,255,0.45);
+          --blue: #4C8DFF; --blue-bright: #7AB0FF; --cyan: #22D3EE;
+          --ink: #EAF0FB; --ink-soft: #8C97B3; --red: #FF6B6B; --green: #34D399;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%),
+                        radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg);
+            color: var(--ink); min-height: 100vh; padding: 30px 20px;
+        }
+        a { text-decoration: none; color: inherit; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
-async function fetchAllUsers() {
-  const querySnapshot = await getDocs(collection(db, "users"));
-  querySnapshot.forEach((doc) => {
-    // Har ek user ka data yahan milega jise aap table mein dikha sakte hain[cite: 1]
-    console.log(doc.id, " => ", doc.data());
-  });
-}
+        .wrap { max-width: 900px; margin: 0 auto; }
+        .back-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--blue-bright); margin-bottom: 16px; }
+        h1 { font-size: 26px; margin-bottom: 6px; }
+        .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
+
+        .stat-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+        .stat-card { flex: 1; min-width: 160px; background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; }
+        .stat-card span { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+        .stat-card strong { font-size: 24px; }
+
+        table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; overflow: hidden; }
+        th, td { text-align: left; padding: 12px 16px; font-size: 13.5px; border-bottom: 1px solid var(--card-border); }
+        th { color: var(--ink-soft); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+        tr:last-child td { border-bottom: none; }
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: linear-gradient(135deg, var(--blue), var(--cyan)); }
+        .avatar-fallback { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 12px; }
+
+        .state-box { text-align: center; padding: 60px 20px; color: var(--ink-soft); }
+        .state-box .icon { font-size: 36px; margin-bottom: 12px; }
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; margin-top: 14px; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <a href="index.html" class="back-link">← Back to Dashboard</a>
+        <h1>🛡️ Admin Dashboard</h1>
+        <p class="sub">Users who have signed in to PharmaAI Hub.</p>
+
+        <div id="content">
+            <div class="state-box">
+                <div class="icon">🔒</div>
+                <p>Checking access…</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+            authDomain: "pharmaai-hub-142f1.firebaseapp.com",
+            projectId: "pharmaai-hub-142f1",
+            storageBucket: "pharmaai-hub-142f1.firebasestorage.app",
+            messagingSenderId: "665986034172",
+            appId: "1:665986034172:web:6752ed83566cd6d015ea79"
+        };
+
+        // 🔑 TODO: apna Gmail yahan daalo — sirf yeh email admin dashboard dekh payega
+        const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const provider = new GoogleAuthProvider();
+
+        const content = document.getElementById("content");
+
+        function renderLoginPrompt() {
+            content.innerHTML = `
+                <div class="state-box">
+                    <div class="icon">🔒</div>
+                    <p>Admin dashboard dekhne ke liye apne admin Google account se sign in karein.</p>
+                    <button class="login-btn" id="adminLoginBtn">Sign in with Google</button>
+                </div>`;
+            document.getElementById("adminLoginBtn").addEventListener("click", () => {
+                signInWithPopup(auth, provider).catch(err => alert("Login failed: " + err.message));
+            });
+        }
+
+        function renderAccessDenied(email) {
+            content.innerHTML = `
+                <div class="state-box">
+                    <div class="icon">⛔</div>
+                    <p><b>${email}</b> ke paas admin access nahi hai.</p>
+                    <p style="font-size:12px; margin-top:8px;">Agar yeh aapka account hai, admin.html me ADMIN_EMAILS list me yeh email add karein.</p>
+                </div>`;
+        }
+
+        function initials(name) {
+            if (!name) return "?";
+            return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+        }
+
+        function formatDate(val) {
+            if (!val) return "—";
+            if (typeof val === "string") return val;
+            if (val.toDate) return val.toDate().toLocaleString("en-IN");
+            return "—";
+        }
+
+        async function renderUserTable() {
+            content.innerHTML = `<div class="state-box"><div class="icon">⏳</div><p>Loading users…</p></div>`;
+            try {
+                const q = query(collection(db, "users"), orderBy("lastLoginTime", "desc"));
+                const snapshot = await getDocs(q);
+                const users = snapshot.docs.map(d => d.data());
+
+                const statHtml = `
+                    <div class="stat-row">
+                        <div class="stat-card"><span>Total Registered Users</span><strong>${users.length}</strong></div>
+                    </div>`;
+
+                if (!users.length) {
+                    content.innerHTML = statHtml + `<div class="state-box"><div class="icon">👥</div><p>Abhi tak koi login nahi hua.</p></div>`;
+                    return;
+                }
+
+                const rows = users.map(u => `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                ${u.photoURL ? `<img class="avatar" src="${u.photoURL}" alt="">` : `<div class="avatar-fallback">${initials(u.name)}</div>`}
+                                <span>${u.name || "Unknown"}</span>
+                            </div>
+                        </td>
+                        <td>${u.email || "—"}</td>
+                        <td>${formatDate(u.lastLoginTime)}</td>
+                    </tr>`).join("");
+
+                content.innerHTML = statHtml + `
+                    <table>
+                        <thead><tr><th>User</th><th>Email</th><th>Last Login</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>`;
+            } catch (err) {
+                content.innerHTML = `<div class="state-box"><div class="icon">❌</div><p>Users load nahi ho paaye: ${err.message}</p></div>`;
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                renderLoginPrompt();
+                return;
+            }
+            if (!ADMIN_EMAILS.includes(user.email)) {
+                renderAccessDenied(user.email);
+                return;
+            }
+            renderUserTable();
+        });
+    </script>
+</body>
+</html>
