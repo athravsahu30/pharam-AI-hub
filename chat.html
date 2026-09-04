@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaAI Hub - AI Prescription Scanner</title>
-    <!-- Premium Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
@@ -21,7 +20,7 @@
         button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
         h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
-        /* ===================== SIDEBAR (Match Dashboard) ===================== */
+        /* Sidebar */
         .sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
         @media (min-width: 901px) { .sidebar.collapsed { width: 0; padding-left: 0; padding-right: 0; border: none; opacity: 0; } }
         .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; min-width: 200px;}
@@ -37,7 +36,7 @@
         .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; opacity: 0; transition: opacity 0.3s; }
         .sidebar-overlay.show { display: block; opacity: 1; }
 
-        /* ===================== MAIN CONTENT & TOPBAR ===================== */
+        /* Main Content */
         .main-content { flex: 1; padding: 25px 35px; overflow-y: auto; width: 100%; min-width: 0; transition: width 0.3s; display: flex; flex-direction: column;}
         .topbar { display: flex; align-items: center; margin-bottom: 30px; gap: 15px; width: 100%; }
         .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
@@ -46,18 +45,18 @@
         .menu-toggle { display: flex; color: var(--ink); font-size: 20px; background: var(--card); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; align-items: center; justify-content: center; transition: 0.2s; }
         .menu-toggle:hover { background: rgba(76,141,255,0.15); border-color: var(--card-border-strong); }
         
-        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; cursor: pointer; transition: 0.2s;}
+        .profile:hover { border-color: var(--card-border-strong); background: rgba(76,141,255,0.1); }
         .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
         .profile-info strong { color: var(--ink); font-size: 13px; }
         .profile-info span { font-size: 11px; color: var(--ink-soft); }
         .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
         .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); white-space: nowrap; }
-        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
-        /* ===================== SCANNER UI ===================== */
+        /* Scanner UI */
         .scanner-container { background: var(--card); border: 1px solid var(--card-border); padding: 35px; border-radius: 16px; width: 100%; max-width: 700px; margin: 0 auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .scanner-header { margin-bottom: 25px; }
-        .scanner-header h2 { font-size: 24px; color: var(--ink); margin-bottom: 8px; }
+        .scanner-header h2 { font-size: 24px; color: var(--ink); margin-bottom: 8px; margin-top: 0;}
         .scanner-header p { font-size: 14px; color: var(--ink-soft); }
         
         .upload-area { border: 2px dashed var(--card-border-strong); border-radius: 12px; padding: 40px 20px; background: rgba(0,0,0,0.2); cursor: pointer; transition: 0.3s; position: relative; }
@@ -71,13 +70,12 @@
         .scan-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
-        /* Loader & Result */
         .loader { display: none; margin-top: 25px; }
         .skeleton-line { height: 18px; border-radius: 6px; margin-bottom: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 37%, rgba(255,255,255,0.05) 63%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
         .skeleton-line.title { height: 25px; width: 50%; margin-bottom: 20px; }
         @keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
 
-        #resultBox { display: none; background: var(--bg-panel); border: 1px solid var(--card-border-strong); padding: 25px; border-radius: 12px; margin-top: 25px; text-align: left; font-size: 15px; line-height: 1.7; color: var(--ink); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #resultBox { display: none; background: var(--card); border: 1px solid var(--card-border-strong); padding: 30px; border-radius: 16px; margin-top: 25px; text-align: left; font-size: 15px; line-height: 1.7; color: var(--ink); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         #resultBox h3 { color: var(--cyan); margin-bottom: 10px; font-size: 18px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; margin-top: 15px;}
         #resultBox h3:first-child { margin-top: 0; }
         #resultBox ul { padding-left: 20px; color: var(--ink-soft); }
@@ -98,8 +96,8 @@
 </head>
 <body>
 
-    <!-- SIDEBAR -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <aside class="sidebar" id="sidebar">
         <div class="brand">
             <div class="brand-icon">⚕️</div>
@@ -113,18 +111,13 @@
             <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="#" class="nav-item active"><span class="nav-icon">📄</span> AI Prescription</a>
-            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
-    <!-- MAIN WORKSPACE -->
     <main class="main-content">
-        
-        <!-- Header -->
         <header class="topbar">
             <button class="menu-toggle" id="menuBtn">☰</button>
             <div style="margin-left: 10px;">
-                <a href="index.html" style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--blue-bright); margin-bottom:4px;">← Back to Dashboard</a>
                 <div class="breadcrumb">Modules / AI Scanner</div>
                 <h1>Smart Prescription</h1>
             </div>
@@ -132,7 +125,7 @@
                 <button id="googleLoginBtn" class="login-btn">
                     <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
                 </button>
-                <div id="userProfile" class="profile" style="display: none;">
+                <div id="userProfile" class="profile" style="display: none;" title="Click to Logout">
                     <img id="userProfilePic" src="" alt="User" class="profile-avatar">
                     <div class="profile-info">
                         <strong id="userNameDisplay">Name</strong>
@@ -142,11 +135,10 @@
             </div>
         </header>
 
-        <!-- Scanner UI -->
         <div class="scanner-container">
             <div class="scanner-header">
                 <h2>AI Prescription Reader</h2>
-                <p>Upload a handwritten medical prescription. Gemini AI reads the handwriting and extracts doctor details, medicines, and dosages — works with Hindi + English too.</p>
+                <p>Upload a handwritten medical prescription. Our AI will clean up the handwriting and extract exact medicines and dosages.</p>
             </div>
 
             <div class="upload-area" id="uploadArea">
@@ -165,52 +157,38 @@
             <!-- Loading Shimmer -->
             <div class="loader" id="loader">
                 <div class="skeleton-line title"></div>
-                <p id="ocrProgress" style="font-size:13px; color:var(--cyan); margin-bottom:12px;">AI is reading your prescription…</p>
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line"></div>
                 <div class="skeleton-line" style="width: 70%;"></div>
             </div>
 
-            <!-- Result Box -->
             <div id="resultBox"></div>
         </div>
     </main>
 
-    <!-- ========================================== -->
-    <!-- JAVASCRIPT: UI & GEMINI VISION LOGIC       -->
-    <!-- ========================================== -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            // Sidebar Toggle Logic
             const menuBtn = document.getElementById("menuBtn");
             const sidebar = document.getElementById("sidebar");
             const sidebarOverlay = document.getElementById("sidebarOverlay");
 
             if (menuBtn && sidebar) {
                 menuBtn.addEventListener("click", () => {
-                    if (window.innerWidth > 900) {
-                        sidebar.classList.toggle("collapsed");
-                    } else {
-                        sidebar.classList.add("open");
-                        if(sidebarOverlay) sidebarOverlay.classList.add("show");
-                    }
+                    if (window.innerWidth > 900) sidebar.classList.toggle("collapsed");
+                    else { sidebar.classList.add("open"); if(sidebarOverlay) sidebarOverlay.classList.add("show"); }
                 });
             }
 
             if (sidebarOverlay) {
                 sidebarOverlay.addEventListener("click", () => {
-                    sidebar.classList.remove("open");
-                    sidebarOverlay.classList.remove("show");
+                    sidebar.classList.remove("open"); sidebarOverlay.classList.remove("show");
                 });
             }
 
             // ==========================================
-            // GEMINI VISION API LOGIC (Sept 2026 — current model + AQ key auth)
+            // GEMINI VISION API LOGIC (Updated to gemini-3.8-flash & AQ Key)
             // ==========================================
-
-            // 👇👇 YAHAN APNI NAYI (AQ...) GEMINI API KEY DAALEIN 👇👇
-            const GEMINI_API_KEY = "PASTE_YOUR_AQ_API_KEY_HERE";
-            const GEMINI_MODEL = "gemini-3.8-flash"; // gemini-1.5-flash is shut down (404) as of 2026
+            const GEMINI_API_KEY = "AQ.Ab8RN6IlEnngKpkYjran8ud9zckHB0lMyZhhSEWyCVt9dXXcGg"; 
 
             const imageInput = document.getElementById("imageInput");
             const imagePreview = document.getElementById("imagePreview");
@@ -223,117 +201,106 @@
             let base64Image = "";
             let mimeType = "image/jpeg";
 
-            imageInput.addEventListener("change", function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    mimeType = file.type;
-                    const reader = new FileReader();
-                    reader.onload = function(event) {
-                        imagePreview.src = event.target.result;
-                        previewContainer.style.display = "block";
-                        uploadArea.style.display = "none";
-                        scanBtn.style.display = "flex";
-                        resultBox.style.display = "none";
-
-                        const img = new Image();
-                        img.onload = function() {
-                            const canvas = document.createElement("canvas");
-                            const ctx = canvas.getContext("2d");
-                            const MAX_WIDTH = 1500;
-                            let scaleSize = 1;
-                            if (img.width > MAX_WIDTH) {
-                                scaleSize = MAX_WIDTH / img.width;
+            if(imageInput) {
+                imageInput.addEventListener("change", function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        mimeType = file.type;
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            imagePreview.src = event.target.result;
+                            previewContainer.style.display = "block";
+                            uploadArea.style.display = "none";
+                            scanBtn.style.display = "flex";
+                            resultBox.style.display = "none";
+                            
+                            const img = new Image();
+                            img.onload = function() {
+                                const canvas = document.createElement("canvas");
+                                const ctx = canvas.getContext("2d");
+                                const MAX_WIDTH = 1500; 
+                                let scaleSize = 1;
+                                if (img.width > MAX_WIDTH) scaleSize = MAX_WIDTH / img.width;
+                                
+                                canvas.width = img.width * scaleSize;
+                                canvas.height = img.height * scaleSize;
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                base64Image = canvas.toDataURL(mimeType, 0.9).split(',')[1];
                             }
-                            canvas.width = img.width * scaleSize;
-                            canvas.height = img.height * scaleSize;
-                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            base64Image = canvas.toDataURL(mimeType, 0.9).split(',')[1];
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+
+            if(scanBtn) {
+                scanBtn.addEventListener("click", async function() {
+                    if (!base64Image) return;
+
+                    scanBtn.style.display = "none"; 
+                    loader.style.display = "block"; 
+                    resultBox.style.display = "none";
+
+                    const promptText = `You are an expert pharmacist and medical professional. Your task is to accurately read and transcribe this handwritten medical prescription. 
+                    Do NOT output random characters or garbage text. 
+                    Extract the data into this EXACT HTML format:
+                    <h3>🏥 Clinic / Doctor Details</h3>
+                    <p>Extract doctor name, clinic name, and date if visible.</p>
+                    <h3>💊 Medicines Prescribed</h3>
+                    <ul>
+                    <li>Extract each medicine clearly (e.g., Tab Flagyl 400, Tab Orotin M, Tab Pan 40). Include dosage instructions if written (e.g., BD, OD, SOS).</li>
+                    </ul>
+                    <h3>📝 Additional Advice</h3>
+                    <p>Extract any notes like "Rest for 2 days" or "Bring prescription for next visit".</p>
+                    
+                    If a specific word is completely illegible, write <span class="error-text">[Illegible]</span>. Output ONLY clean HTML, no markdown backticks.`;
+
+                    try {
+                        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${GEMINI_API_KEY}`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [
+                                        { text: promptText },
+                                        { inlineData: { mimeType: mimeType, data: base64Image } }
+                                    ]
+                                }]
+                            })
+                        });
+
+                        const data = await response.json();
+                        loader.style.display = "none"; 
+                        scanBtn.style.display = "flex"; 
+                        
+                        if (!response.ok) throw new Error(data.error.message || "API Error");
+
+                        if (data.candidates && data.candidates[0].content.parts[0].text) {
+                            let aiResponse = data.candidates[0].content.parts[0].text;
+                            aiResponse = aiResponse.replace(/```html/g, '').replace(/```/g, ''); 
+                            resultBox.innerHTML = aiResponse;
+                            resultBox.style.display = "block";
+                        } else {
+                            throw new Error("Could not read text. Please try a clearer photo.");
                         }
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
 
-            scanBtn.addEventListener("click", async function() {
-                if (!base64Image) return;
-
-                if (GEMINI_API_KEY === "AQ.Ab8RN6KnsnFFLLLbpRgy4pjnQOUI2wKTc1vMyCf1jHmzh6pBHw") {
-                    resultBox.innerHTML = `<span class="error-text">⚠️ API key set nahi hai.</span> Google AI Studio (aistudio.google.com/apikey) se apni key lekar code me GEMINI_API_KEY wali line me paste karo.`;
-                    resultBox.style.display = "block";
-                    return;
-                }
-
-                scanBtn.style.display = "none";
-                loader.style.display = "block";
-                resultBox.style.display = "none";
-
-                const promptText = `You are an expert pharmacist and medical professional. Your task is to accurately read and transcribe this handwritten medical prescription.
-                Do NOT output random characters or garbage text.
-                Extract the data into this EXACT HTML format:
-                <h3>🏥 Clinic / Doctor Details</h3>
-                <p>Extract doctor name, clinic name, and date if visible.</p>
-                <h3>💊 Medicines Prescribed</h3>
-                <ul>
-                <li>Extract each medicine clearly (e.g., Tab Flagyl 400, Tab Orotin M, Tab Pan 40). Include dosage instructions if written (e.g., BD, OD, SOS).</li>
-                </ul>
-                <h3>📝 Additional Advice</h3>
-                <p>Extract any notes like "Rest for 2 days" or "Bring prescription for next visit".</p>
-
-                If a specific word is completely illegible, write <span class="error-text">[Illegible]</span>. Output ONLY clean HTML, no markdown backticks.`;
-
-                try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "x-goog-api-key": GEMINI_API_KEY
-                        },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: promptText },
-                                    { inlineData: { mimeType: mimeType, data: base64Image } }
-                                ]
-                            }]
-                        })
-                    });
-
-                    const data = await response.json();
-                    loader.style.display = "none";
-                    scanBtn.style.display = "flex";
-
-                    if (!response.ok) {
-                        throw new Error((data.error && data.error.message) || "API Error");
-                    }
-
-                    if (data.candidates && data.candidates[0].content.parts[0].text) {
-                        let aiResponse = data.candidates[0].content.parts[0].text;
-                        aiResponse = aiResponse.replace(/```html/g, '').replace(/```/g, '');
-                        resultBox.innerHTML = aiResponse;
+                    } catch (error) {
+                        loader.style.display = "none";
+                        scanBtn.style.display = "flex"; 
+                        resultBox.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span>`;
                         resultBox.style.display = "block";
-                    } else {
-                        throw new Error("Could not read text. Please try a clearer photo.");
                     }
-
-                } catch (error) {
-                    loader.style.display = "none";
-                    scanBtn.style.display = "flex";
-                    resultBox.innerHTML = `<span class="error-text">❌ Error: ${error.message}</span> <br><br> Apni API key check karein, ya photo clearly wapas khichein.`;
-                    resultBox.style.display = "block";
-                }
-            });
+                });
+            }
         });
     </script>
 
-    <!-- ========================================== -->
-    <!-- JAVASCRIPT: FIREBASE AUTH                  -->
-    <!-- ========================================== -->
+    <!-- FIREBASE AUTH & LOGOUT LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        // Yahan Aapki Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
             authDomain: "pharmaai-hub-142f1.firebaseapp.com",
@@ -356,6 +323,15 @@
             if(loginBtn) {
                 loginBtn.addEventListener("click", () => {
                     signInWithPopup(auth, provider).catch(err => console.error("Login Error:", err));
+                });
+            }
+
+            // Logout Logic
+            if(userProfile) {
+                userProfile.addEventListener("click", () => {
+                    if (confirm("Do you want to sign out?")) {
+                        signOut(auth).then(() => window.location.reload()).catch(err => console.error(err));
+                    }
                 });
             }
 
