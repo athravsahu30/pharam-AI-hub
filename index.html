@@ -7,6 +7,7 @@
     <!-- Premium Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script src="pharma-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     
     <style>
         :root {
@@ -248,12 +249,12 @@
         <div class="welcome-modal">
             <div class="brand-icon">⚕️</div>
             <h2>Welcome to PharmaAI</h2>
-            <p>Please sign in to access advanced AI modules, extract drug data, and track prescriptions instantly.</p>
-            
+            <p>Sign in with Google to access PharmaAI Hub — drug search, AI modules, and prescription scanning.</p>
+
             <button id="modalGoogleLoginBtn" class="login-btn">
                 <img src="https://www.google.com/favicon.ico" width="18" alt="G"> Sign in with Google
             </button>
-            <button class="skip-btn" id="closeModalBtn">Maybe later, continue as guest</button>
+            <p style="font-size:11.5px; color:var(--ink-soft); margin-top:14px;">Login is required to use PharmaAI Hub — this helps us keep the AI modules free.</p>
         </div>
     </div>
 
@@ -400,7 +401,6 @@
             const sidebar = document.getElementById("sidebar");
             const sidebarOverlay = document.getElementById("sidebarOverlay");
             const welcomeModalOverlay = document.getElementById("welcomeModalOverlay");
-            const closeModalBtn = document.getElementById("closeModalBtn");
 
             // Sidebar Toggle Logic
             if (menuBtn && sidebar) {
@@ -420,12 +420,6 @@
                     sidebarOverlay.classList.remove("show");
                 });
             }
-
-            if (closeModalBtn && welcomeModalOverlay) {
-                closeModalBtn.addEventListener("click", () => {
-                    welcomeModalOverlay.classList.remove("show");
-                });
-            }
         });
     </script>
 
@@ -435,7 +429,16 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // ===== EmailJS Setup (get well soon email, once per day per user) =====
+        // 🔑 TODO: fill these in from your EmailJS dashboard (emailjs.com)
+        const EMAILJS_PUBLIC_KEY  = "PASTE_YOUR_EMAILJS_PUBLIC_KEY";
+        const EMAILJS_SERVICE_ID  = "PASTE_YOUR_EMAILJS_SERVICE_ID";
+        const EMAILJS_TEMPLATE_ID = "PASTE_YOUR_EMAILJS_TEMPLATE_ID";
+        if (typeof emailjs !== "undefined" && EMAILJS_PUBLIC_KEY.indexOf("PASTE_") !== 0) {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
 
         // Your Firebase Setup
         const firebaseConfig = {
@@ -565,7 +568,9 @@
                     return block;
                 }
 
-                const sourceNote = info.source === 'openfda-rxnorm'
+                const sourceNote = info.source === 'openfda-synonym'
+                    ? `Matched via US generic name`
+                    : info.source === 'openfda-rxnorm'
                     ? `Matched via RxNorm → generic name`
                     : info.source === 'openfda' ? `Direct FDA label match`
                     : info.source === 'medlineplus' ? `MedlinePlus (FDA label not available)`
@@ -651,6 +656,31 @@
                 return html;
             }
 
+            // ===== "Get well soon" email — once per calendar day per user =====
+            async function maybeSendWellnessEmail(user) {
+                if (!user || !user.email) return;
+                if (typeof emailjs === "undefined") return;
+                if (EMAILJS_PUBLIC_KEY.indexOf("PASTE_") === 0) return; // not configured yet
+
+                try {
+                    const userRef = doc(db, "users", user.uid);
+                    const snap = await getDoc(userRef);
+                    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+                    const lastSent = snap.exists() ? snap.data().lastEmailSentDate : null;
+                    if (lastSent === today) return; // already sent today
+
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                        to_email: user.email,
+                        to_name: (user.displayName || "there").split(" ")[0],
+                        from_name: "Developer Team, PharmaAI Hub by Athrav"
+                    });
+
+                    await setDoc(userRef, { lastEmailSentDate: today }, { merge: true });
+                } catch (error) {
+                    console.error("Wellness email failed:", error);
+                }
+            }
+
             async function handleSearch() {
                 if(!dashSearchInput) return;
                 const searchTerm = dashSearchInput.value.trim();
@@ -665,6 +695,7 @@
                             timestamp: serverTimestamp()
                         });
                     } catch (error) { console.error("History Save Error:", error); }
+                    maybeSendWellnessEmail(user); // fire-and-forget, once per day
                 }
 
                 dashResultBox.style.display = "none";
