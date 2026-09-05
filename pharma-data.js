@@ -101,20 +101,11 @@ const PharmaData = (function () {
     }
 
     // ---------- 4. DailyMed official label link ----------
+    // DISABLED: confirmed CORS-blocked in production (dailymed.nlm.nih.gov
+    // does not send Access-Control-Allow-Origin), so this always fails.
+    // Kept as a no-op stub so the rest of the code doesn't need to change.
     async function tryDailyMed(name) {
-        try {
-            const res = await fetchWithTimeout(`https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=${encodeURIComponent(name)}&pagesize=1`);
-            if (!res.ok) return null;
-            const json = await res.json();
-            const first = json.data && json.data[0];
-            if (!first || !first.setid) return null;
-            return {
-                title: first.title,
-                link: `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${first.setid}`
-            };
-        } catch (e) {
-            return null;
-        }
+        return null;
     }
 
     // ---------- 5. PubChem chemistry ----------
@@ -194,27 +185,11 @@ const PharmaData = (function () {
     }
 
     // ---------- 9. ChEMBL (EMBL-EBI) mechanism of action ----------
+    // DISABLED: confirmed CORS-blocked in production (www.ebi.ac.uk does
+    // not send Access-Control-Allow-Origin for browser fetch), so this
+    // always fails. Kept as a no-op stub so nothing else needs to change.
     async function tryChEMBL(name) {
-        try {
-            const searchRes = await fetchWithTimeout(`https://www.ebi.ac.uk/chembl/api/data/molecule/search.json?q=${encodeURIComponent(name)}&limit=1`);
-            if (!searchRes.ok) return null;
-            const searchJson = await searchRes.json();
-            const mol = searchJson.molecules && searchJson.molecules[0];
-            const chemblId = mol && mol.molecule_chembl_id;
-            if (!chemblId) return null;
-
-            const mechRes = await fetchWithTimeout(`https://www.ebi.ac.uk/chembl/api/data/mechanism.json?molecule_chembl_id=${chemblId}&limit=1`);
-            if (!mechRes.ok) return null;
-            const mechJson = await mechRes.json();
-            const mech = mechJson.mechanisms && mechJson.mechanisms[0];
-            if (!mech) return null;
-            return {
-                mechanismOfAction: mech.mechanism_of_action || null,
-                targetName: mech.target_name || null
-            };
-        } catch (e) {
-            return null;
-        }
+        return null;
     }
 
     // ---------- 10. openFDA NDC Directory (manufacturer/route/form) ----------
@@ -311,11 +286,27 @@ const PharmaData = (function () {
         return { dailymed, chemistry, trials, topReactions, recall, mechanism, ndc, articles };
     }
 
+    // Common India/International generic names that differ from the US
+    // name openFDA actually uses. Checked first so these always resolve
+    // correctly instead of depending on RxNorm's inconsistent mapping.
+    const NAME_SYNONYMS = {
+        "paracetamol": "acetaminophen",
+        "salbutamol": "albuterol",
+        "frusemide": "furosemide",
+        "adrenaline": "epinephrine",
+        "noradrenaline": "norepinephrine",
+        "diclofenac sodium": "diclofenac",
+        "meropenem": "meropenem",
+        "cetirizine hydrochloride": "cetirizine",
+        "domperidone": "domperidone",
+        "pantoprazole sodium": "pantoprazole"
+    };
+
     /**
      * Main entry point.
      * Returns a normalized object:
      * {
-     *   source: 'openfda' | 'openfda-rxnorm' | 'medlineplus' | null,
+     *   source: 'openfda' | 'openfda-rxnorm' | 'openfda-synonym' | 'medlineplus' | null,
      *   name: string,
      *   fda: <raw openFDA label result> | null,
      *   medline: [{title, link}] | null,
@@ -326,6 +317,16 @@ const PharmaData = (function () {
     async function fetchDrugInfo(rawName) {
         const name = rawName.trim().toLowerCase();
         if (!name) return null;
+
+        // 0. Known US-naming synonym (e.g. paracetamol -> acetaminophen)
+        if (NAME_SYNONYMS[name]) {
+            const usName = NAME_SYNONYMS[name];
+            const synonymHit = await tryOpenFDA(usName);
+            if (synonymHit) {
+                const extras = await fetchExtras(usName);
+                return { source: 'openfda-synonym', name: usName, fda: synonymHit, medline: null, extras };
+            }
+        }
 
         // 1. Direct openFDA
         const direct = await tryOpenFDA(name);
@@ -354,10 +355,10 @@ const PharmaData = (function () {
             }
         }
 
-        // 4. Last resort — chemistry/trials/DailyMed may still know this name
+        // 4. Last resort — chemistry/trials may still know this name
         //    even when openFDA/RxNorm/MedlinePlus have nothing.
         const extras = await fetchExtras(name);
-        if (extras.dailymed || extras.chemistry || (extras.trials && extras.trials.length)) {
+        if (extras.chemistry || (extras.trials && extras.trials.length) || (extras.articles && extras.articles.length)) {
             return { source: 'extras-only', name, fda: null, medline: null, extras };
         }
 
