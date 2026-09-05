@@ -32,11 +32,24 @@
 
 const PharmaData = (function () {
 
+    // Wraps fetch with a hard timeout — a slow/unreachable source
+    // will fail gracefully instead of hanging the whole search.
+    async function fetchWithTimeout(url, ms = 6000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), ms);
+        try {
+            const res = await fetch(url, { signal: controller.signal });
+            return res;
+        } finally {
+            clearTimeout(timer);
+        }
+    }
+
     // ---------- 1. openFDA drug label ----------
     async function tryOpenFDA(name) {
         try {
             const url = `https://api.fda.gov/drug/label.json?search=openfda.generic_name:"${name}"+OR+openfda.brand_name:"${name}"&limit=1`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             return (json.results && json.results[0]) || null;
@@ -48,7 +61,7 @@ const PharmaData = (function () {
     // ---------- 2. RxNorm name normalization ----------
     async function rxNormalize(name) {
         try {
-            const res = await fetch(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(name)}`);
+            const res = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(name)}`);
             if (!res.ok) return null;
             const json = await res.json();
             const rxcui = json && json.idGroup && json.idGroup.rxnormId && json.idGroup.rxnormId[0];
@@ -56,7 +69,7 @@ const PharmaData = (function () {
 
             let genericName = null;
             try {
-                const relRes = await fetch(`https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/related.json?tty=IN`);
+                const relRes = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/related.json?tty=IN`);
                 const relJson = await relRes.json();
                 const group = relJson && relJson.relatedGroup && relJson.relatedGroup.conceptGroup;
                 const ingredient = group && group.find(g => g.tty === 'IN');
@@ -73,7 +86,7 @@ const PharmaData = (function () {
     async function tryMedlinePlus(rxcui) {
         try {
             const url = `https://connect.medlineplus.gov/service?mainSearchCriteria.v.cs=RXCUI&mainSearchCriteria.v.c=${rxcui}&knowledgeResponseType=application/json`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             const entries = json && json.feed && json.feed.entry;
@@ -90,7 +103,7 @@ const PharmaData = (function () {
     // ---------- 4. DailyMed official label link ----------
     async function tryDailyMed(name) {
         try {
-            const res = await fetch(`https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=${encodeURIComponent(name)}&pagesize=1`);
+            const res = await fetchWithTimeout(`https://dailymed.nlm.nih.gov/dailymed/services/v2/spls.json?drug_name=${encodeURIComponent(name)}&pagesize=1`);
             if (!res.ok) return null;
             const json = await res.json();
             const first = json.data && json.data[0];
@@ -108,7 +121,7 @@ const PharmaData = (function () {
     async function tryPubChem(name) {
         try {
             const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/MolecularFormula,MolecularWeight,IUPACName/JSON`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             const props = json.PropertyTable && json.PropertyTable.Properties && json.PropertyTable.Properties[0];
@@ -127,7 +140,7 @@ const PharmaData = (function () {
     async function tryClinicalTrials(name) {
         try {
             const url = `https://clinicaltrials.gov/api/v2/studies?query.term=${encodeURIComponent(name)}&pageSize=3&fields=NCTId,BriefTitle,OverallStatus`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             const studies = json.studies;
@@ -151,7 +164,7 @@ const PharmaData = (function () {
     async function tryTopReactions(name) {
         try {
             const url = `https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:"${name}"&count=patient.reaction.reactionmeddrapt.exact&limit=5`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             if (!json.results || !json.results.length) return null;
@@ -165,7 +178,7 @@ const PharmaData = (function () {
     async function tryRecall(name) {
         try {
             const url = `https://api.fda.gov/drug/enforcement.json?search=product_description:"${name}"&limit=1&sort=report_date:desc`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             const r = json.results && json.results[0];
@@ -183,14 +196,14 @@ const PharmaData = (function () {
     // ---------- 9. ChEMBL (EMBL-EBI) mechanism of action ----------
     async function tryChEMBL(name) {
         try {
-            const searchRes = await fetch(`https://www.ebi.ac.uk/chembl/api/data/molecule/search.json?q=${encodeURIComponent(name)}&limit=1`);
+            const searchRes = await fetchWithTimeout(`https://www.ebi.ac.uk/chembl/api/data/molecule/search.json?q=${encodeURIComponent(name)}&limit=1`);
             if (!searchRes.ok) return null;
             const searchJson = await searchRes.json();
             const mol = searchJson.molecules && searchJson.molecules[0];
             const chemblId = mol && mol.molecule_chembl_id;
             if (!chemblId) return null;
 
-            const mechRes = await fetch(`https://www.ebi.ac.uk/chembl/api/data/mechanism.json?molecule_chembl_id=${chemblId}&limit=1`);
+            const mechRes = await fetchWithTimeout(`https://www.ebi.ac.uk/chembl/api/data/mechanism.json?molecule_chembl_id=${chemblId}&limit=1`);
             if (!mechRes.ok) return null;
             const mechJson = await mechRes.json();
             const mech = mechJson.mechanisms && mechJson.mechanisms[0];
@@ -208,7 +221,7 @@ const PharmaData = (function () {
     async function tryNDC(name) {
         try {
             const url = `https://api.fda.gov/drug/ndc.json?search=generic_name:"${name}"+OR+brand_name:"${name}"&limit=1`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (!res.ok) return null;
             const json = await res.json();
             const r = json.results && json.results[0];
@@ -227,14 +240,14 @@ const PharmaData = (function () {
     async function tryPubMed(name) {
         try {
             const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=3&term=${encodeURIComponent(name)}`;
-            const searchRes = await fetch(searchUrl);
+            const searchRes = await fetchWithTimeout(searchUrl);
             if (!searchRes.ok) return null;
             const searchJson = await searchRes.json();
             const ids = searchJson.esearchresult && searchJson.esearchresult.idlist;
             if (!ids || !ids.length) return null;
 
             const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${ids.join(",")}`;
-            const summaryRes = await fetch(summaryUrl);
+            const summaryRes = await fetchWithTimeout(summaryUrl);
             if (!summaryRes.ok) return null;
             const summaryJson = await summaryRes.json();
 
@@ -260,7 +273,7 @@ const PharmaData = (function () {
 
         try {
             const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(trimmed)}`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (res.ok) {
                 const json = await res.json();
                 const translated = json && json[0] ? json[0].map(chunk => chunk[0]).join("") : null;
@@ -270,7 +283,7 @@ const PharmaData = (function () {
 
         try {
             const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=en|hi`;
-            const res = await fetch(url);
+            const res = await fetchWithTimeout(url);
             if (res.ok) {
                 const json = await res.json();
                 return (json.responseData && json.responseData.translatedText) || null;
