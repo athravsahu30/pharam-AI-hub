@@ -21,6 +21,13 @@
    7. openFDA (adverse event)— real-world top reported side
                                 effects (from patient reports)
    8. openFDA (enforcement)  — recall / safety alert info
+   9. ChEMBL (EMBL-EBI)      — mechanism of action
+   10. openFDA (NDC Directory)— manufacturer, route, dosage form
+   11. PubMed (NCBI E-utils) — related research article links
+
+   Translation: free, key-free English → Hindi translation
+   (used for bilingual results), with an automatic fallback
+   between two free providers if one is unavailable.
    ========================================================== */
 
 const PharmaData = (function () {
@@ -173,19 +180,122 @@ const PharmaData = (function () {
         }
     }
 
+    // ---------- 9. ChEMBL (EMBL-EBI) mechanism of action ----------
+    async function tryChEMBL(name) {
+        try {
+            const searchRes = await fetch(`https://www.ebi.ac.uk/chembl/api/data/molecule/search.json?q=${encodeURIComponent(name)}&limit=1`);
+            if (!searchRes.ok) return null;
+            const searchJson = await searchRes.json();
+            const mol = searchJson.molecules && searchJson.molecules[0];
+            const chemblId = mol && mol.molecule_chembl_id;
+            if (!chemblId) return null;
+
+            const mechRes = await fetch(`https://www.ebi.ac.uk/chembl/api/data/mechanism.json?molecule_chembl_id=${chemblId}&limit=1`);
+            if (!mechRes.ok) return null;
+            const mechJson = await mechRes.json();
+            const mech = mechJson.mechanisms && mechJson.mechanisms[0];
+            if (!mech) return null;
+            return {
+                mechanismOfAction: mech.mechanism_of_action || null,
+                targetName: mech.target_name || null
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ---------- 10. openFDA NDC Directory (manufacturer/route/form) ----------
+    async function tryNDC(name) {
+        try {
+            const url = `https://api.fda.gov/drug/ndc.json?search=generic_name:"${name}"+OR+brand_name:"${name}"&limit=1`;
+            const res = await fetch(url);
+            if (!res.ok) return null;
+            const json = await res.json();
+            const r = json.results && json.results[0];
+            if (!r) return null;
+            return {
+                manufacturer: r.labeler_name || null,
+                route: r.route ? r.route.join(", ") : null,
+                dosageForm: r.dosage_form || null
+            };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ---------- 11. PubMed (NCBI) related research articles ----------
+    async function tryPubMed(name) {
+        try {
+            const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=3&term=${encodeURIComponent(name)}`;
+            const searchRes = await fetch(searchUrl);
+            if (!searchRes.ok) return null;
+            const searchJson = await searchRes.json();
+            const ids = searchJson.esearchresult && searchJson.esearchresult.idlist;
+            if (!ids || !ids.length) return null;
+
+            const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${ids.join(",")}`;
+            const summaryRes = await fetch(summaryUrl);
+            if (!summaryRes.ok) return null;
+            const summaryJson = await summaryRes.json();
+
+            return ids.map(id => {
+                const item = summaryJson.result && summaryJson.result[id];
+                if (!item) return null;
+                return {
+                    title: item.title,
+                    link: `https://pubmed.ncbi.nlm.nih.gov/${id}/`
+                };
+            }).filter(Boolean);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ---------- Free translation (English → Hindi), no API key ----------
+    // Tries Google's public translate endpoint first (best quality),
+    // falls back to MyMemory (documented free API) if that fails.
+    async function translateToHindi(text) {
+        if (!text) return null;
+        const trimmed = text.length > 450 ? text.substring(0, 450) : text;
+
+        try {
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(trimmed)}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const json = await res.json();
+                const translated = json && json[0] ? json[0].map(chunk => chunk[0]).join("") : null;
+                if (translated) return translated;
+            }
+        } catch (e) { /* fall through to backup */ }
+
+        try {
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=en|hi`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const json = await res.json();
+                return (json.responseData && json.responseData.translatedText) || null;
+            }
+        } catch (e) { /* ignore */ }
+
+        return null;
+    }
+
     /**
      * Enrichment: fetched in parallel, best-effort, never blocks
      * the main answer (any of these can be null).
      */
     async function fetchExtras(name) {
-        const [dailymed, chemistry, trials, topReactions, recall] = await Promise.all([
+        const [dailymed, chemistry, trials, topReactions, recall, mechanism, ndc, articles] = await Promise.all([
             tryDailyMed(name),
             tryPubChem(name),
             tryClinicalTrials(name),
             tryTopReactions(name),
-            tryRecall(name)
+            tryRecall(name),
+            tryChEMBL(name),
+            tryNDC(name),
+            tryPubMed(name)
         ]);
-        return { dailymed, chemistry, trials, topReactions, recall };
+        return { dailymed, chemistry, trials, topReactions, recall, mechanism, ndc, articles };
     }
 
     /**
@@ -241,5 +351,5 @@ const PharmaData = (function () {
         return null;
     }
 
-    return { fetchDrugInfo };
+    return { fetchDrugInfo, translateToHindi };
 })();
