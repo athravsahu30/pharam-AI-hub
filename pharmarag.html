@@ -249,7 +249,9 @@
                 return block;
             }
 
-            const sourceNote = info.source === 'openfda-rxnorm'
+            const sourceNote = info.source === 'openfda-synonym'
+                ? `Matched via US generic name`
+                : info.source === 'openfda-rxnorm'
                 ? `Matched via RxNorm → generic name`
                 : info.source === 'openfda' ? `Direct FDA label match`
                 : info.source === 'medlineplus' ? `MedlinePlus (FDA label not available)`
