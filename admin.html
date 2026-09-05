@@ -22,7 +22,8 @@
         a { text-decoration: none; color: inherit; }
         h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
 
-        .wrap { max-width: 900px; margin: 0 auto; }
+        .wrap { max-width: 900px; margin: 0 auto; opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         .back-link { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--blue-bright); margin-bottom: 16px; }
         h1 { font-size: 26px; margin-bottom: 6px; }
         .sub { color: var(--ink-soft); font-size: 14px; margin-bottom: 24px; }
@@ -119,9 +120,11 @@
         async function renderUserTable() {
             content.innerHTML = `<div class="state-box"><div class="icon">⏳</div><p>Loading users…</p></div>`;
             try {
-                const q = query(collection(db, "users"), orderBy("lastLoginTime", "desc"));
-                const snapshot = await getDocs(q);
-                const users = snapshot.docs.map(d => d.data());
+                // Fetch all, sort client-side — server-side orderBy would silently
+                // hide any older user docs that don't yet have lastLoginTimestamp.
+                const snapshot = await getDocs(collection(db, "users"));
+                const users = snapshot.docs.map(d => d.data())
+                    .sort((a, b) => (b.lastLoginTimestamp || 0) - (a.lastLoginTimestamp || 0));
 
                 const statHtml = `
                     <div class="stat-row">
