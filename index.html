@@ -376,7 +376,7 @@
             <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Home</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
-            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
+            <a href="admin.html" class="nav-item" id="adminNavLink" style="display:none;"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
@@ -602,6 +602,14 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // Only these accounts can see/use the Admin section
+        const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+        function toggleAdminNav(user) {
+            const adminNavLink = document.getElementById("adminNavLink");
+            if (!adminNavLink) return;
+            adminNavLink.style.display = (user && ADMIN_EMAILS.includes(user.email)) ? "flex" : "none";
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const loginBtn = document.getElementById("googleLoginBtn");
             const modalLoginBtn = document.getElementById("modalGoogleLoginBtn");
@@ -672,6 +680,7 @@
             }
 
             onAuthStateChanged(auth, async (user) => {
+                toggleAdminNav(user);
                 if (user) {
                     // If there's no recorded login time (e.g. session restored from a
                     // previous visit before this feature existed), start the clock now.
