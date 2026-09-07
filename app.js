@@ -72,15 +72,27 @@ document.addEventListener("DOMContentLoaded", function() {
 
         resultArea.style.color = "#EAF0FB";
         const extrasHtml = renderExtras(info.extras);
+        let noteHtml = "";
+        if (info.brandInput) {
+            noteHtml += `<div style="font-size:12px; color:#8C97B3; margin-bottom:8px;">🏷️ Brand name <strong>${info.brandInput}</strong> recognized as generic <strong>${info.name}</strong>.</div>`;
+        }
+        if (info.didYouMean) {
+            noteHtml += `<div style="font-size:12px; color:#8C97B3; margin-bottom:8px;">✏️ Did you mean <strong>${info.didYouMean.to}</strong>? Showing corrected results for "${info.didYouMean.from}".</div>`;
+        }
 
         if (info.fda) {
             const indications = info.fda.indications_and_usage ? info.fda.indications_and_usage[0] : "Data not available.";
             const adr = info.fda.adverse_reactions ? info.fda.adverse_reactions[0] : "Data not available.";
-            const sourceNote = info.source === 'openfda-rxnorm'
+            const sourceNote = info.source === 'brand-map'
+                ? `Brand name recognized → generic name: <strong>${info.name.toUpperCase()}</strong>`
+                : info.source === 'openfda-synonym'
+                ? `Matched via known generic-name synonym: <strong>${info.name.toUpperCase()}</strong>`
+                : info.source === 'openfda-rxnorm'
                 ? `Matched via RxNorm → generic name: <strong>${info.name.toUpperCase()}</strong>`
                 : `Direct match: <strong>${info.name.toUpperCase()}</strong>`;
 
             resultArea.innerHTML = `
+                ${noteHtml}
                 <strong style="color: #34D399;">✅ ${sourceNote}</strong><br><br>
                 <strong>Uses (Indications):</strong> ${indications.substring(0, 250)}...<br><br>
                 <strong>Adverse Reactions (ADR):</strong> ${adr.substring(0, 250)}...<br><br>
@@ -92,6 +104,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 `<li><a href="${m.link}" target="_blank" rel="noopener" style="color:#7AB0FF;">${m.title}</a></li>`
             ).join("");
             resultArea.innerHTML = `
+                ${noteHtml}
                 <strong style="color: #34D399;">✅ Match Found: ${info.name.toUpperCase()}</strong><br><br>
                 FDA label data available nahi thi, lekin MedlinePlus (NIH) pe yeh mila:<br>
                 <ul style="margin:8px 0 0 18px; padding:0;">${items}</ul><br>
@@ -100,6 +113,7 @@ document.addEventListener("DOMContentLoaded", function() {
             `;
         } else {
             resultArea.innerHTML = `
+                ${noteHtml}
                 <strong style="color: #34D399;">✅ Match Found: ${info.name.toUpperCase()}</strong><br><br>
                 Poora FDA label text available nahi hai, lekin neeche di gayi info mili:
                 ${extrasHtml || "<span style='color:#8C97B3;'>Limited data available.</span>"}
