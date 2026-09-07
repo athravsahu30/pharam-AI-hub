@@ -60,7 +60,7 @@
         .search-box { display: flex; gap: 12px; }
         
         /* =========================================
-           Gemini-Style Animated Search Glow
+           Gemini-Style Animated Search Glow (Fixed)
            ========================================= */
         .gemini-search-wrapper {
             position: relative;
@@ -95,23 +95,24 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* Input styling inside the new wrapper */
+        /* Input styling inside the new wrapper - FIX FOR GLOW */
         .gemini-search-wrapper input {
             width: 100%;
             padding: 15px 20px;
             border-radius: 12px;
             border: 1px solid var(--card-border-strong);
-            background: rgba(0,0,0,0.3);
+            background-color: var(--bg-panel); /* THIS KEEPS THE INSIDE SOLID DARK */
             color: white;
             font-size: 16px;
             outline: none;
             font-family: inherit;
             transition: 0.3s;
-            z-index: 2;
+            position: relative;
+            z-index: 2; /* Keeps text box above the gradient */
         }
 
         .gemini-search-wrapper input:focus {
-            border-color: transparent; /* Let the glow shine through */
+            border-color: transparent; /* Let the glow shine through the border area */
         }
         /* ========================================= */
 
