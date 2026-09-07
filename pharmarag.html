@@ -63,6 +63,10 @@
         .search-box button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .search-box button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
+        /* Recent Search History (per logged-in user only) */
+        .history-tag { background: var(--card); border: 1px solid var(--card-border); padding: 8px 16px; border-radius: 20px; font-size: 12px; color: var(--ink-soft); cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .history-tag:hover { background: rgba(76,141,255,0.1); border-color: var(--card-border-strong); color: var(--blue-bright); transform: translateY(-1px); }
+
         /* Result Section & Loader */
         .result-container { display: none; background: var(--bg-panel); border: 1px solid var(--card-border); padding: 22px; border-radius: 16px; margin-top: 24px; font-size: 15px; color: var(--ink); animation: fadeInUp 0.5s ease; }
         .result-title { color: var(--ink); font-size: 19px; font-family: 'Space Grotesk', sans-serif; margin: 0 0 16px; }
@@ -133,10 +137,10 @@
         </div>
         <nav class="navigation">
             <div class="nav-label">MAIN MENU</div>
-            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Home</a>
             <a href="#" class="nav-item active"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
-            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
+            <a href="admin.html" class="nav-item" id="adminNavLink" style="display:none;"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
@@ -173,6 +177,14 @@
                 <input type="text" id="drugInput" placeholder="e.g. Paracetamol, Amoxicillin..." onkeypress="handleEnter(event)">
                 <button id="searchBtn">🔍 Search Drug</button>
             </div>
+        </div>
+
+        <!-- Recent Search History (only this signed-in user's own searches) -->
+        <div id="historyHeading" style="display: none; margin: 0 0 10px;">
+            <h2 style="font-size: 15px; color: var(--ink-soft); margin: 0;">Recent Searches</h2>
+        </div>
+        <div id="historyContainer" style="display: none; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;">
+            <!-- History tags will appear here -->
         </div>
 
         <!-- Animated Loader -->
@@ -390,7 +402,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Yahan Aapki Same Firebase Config
         const firebaseConfig = {
@@ -408,6 +420,14 @@
         const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
 
+        // Only these accounts can see/use the Admin section
+        const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+        function toggleAdminNav(user) {
+            const adminNavLink = document.getElementById("adminNavLink");
+            if (!adminNavLink) return;
+            adminNavLink.style.display = (user && ADMIN_EMAILS.includes(user.email)) ? "flex" : "none";
+        }
+
         window.pharmaAuth = auth;
         window.saveSearchToHistory = async function(term) {
             const user = auth.currentUser;
@@ -418,8 +438,59 @@
                     term: term,
                     timestamp: serverTimestamp()
                 });
+                loadSearchHistory(user); // refresh the list right after a new search
             } catch (e) { console.error("History Save Error:", e); }
         };
+
+        // Show only the CURRENT user's own recent searches — never anyone else's.
+        // The Firestore query is filtered by this user's uid, so no other
+        // account's search terms are ever fetched or displayed here.
+        async function loadSearchHistory(user) {
+            const historyHeading = document.getElementById("historyHeading");
+            const historyContainer = document.getElementById("historyContainer");
+            if (!historyContainer || !historyHeading || !user) return;
+
+            historyContainer.innerHTML = "";
+
+            try {
+                const q = query(collection(db, "search_history"), where("uid", "==", user.uid));
+                const querySnapshot = await getDocs(q);
+
+                let searches = [];
+                querySnapshot.forEach((docSnap) => { searches.push(docSnap.data()); });
+
+                searches.sort((a, b) => {
+                    const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
+                    const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                // De-duplicate so repeated searches for the same drug don't clutter the list
+                const seen = new Set();
+                const uniqueSearches = searches.filter(s => {
+                    const key = s.term.toLowerCase();
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+
+                if (uniqueSearches.length > 0) {
+                    historyHeading.style.display = "block";
+                    historyContainer.style.display = "flex";
+
+                    uniqueSearches.slice(0, 6).forEach((data) => {
+                        const tag = document.createElement("div");
+                        tag.className = "history-tag";
+                        tag.innerHTML = `🕒 ${data.term}`;
+                        tag.onclick = () => { document.getElementById("drugInput").value = data.term; searchDrug(data.term); };
+                        historyContainer.appendChild(tag);
+                    });
+                } else {
+                    historyHeading.style.display = "none";
+                    historyContainer.style.display = "none";
+                }
+            } catch (error) { console.error("Load History Error:", error); }
+        }
 
         const loginBtn = document.getElementById("googleLoginBtn");
         const userProfile = document.getElementById("userProfile");
@@ -431,14 +502,21 @@
         });
 
         onAuthStateChanged(auth, (user) => {
+            toggleAdminNav(user);
             if (user) {
                 loginBtn.style.display = "none"; 
                 userProfile.style.display = "flex"; 
                 userNameDisplay.innerText = user.displayName.split(" ")[0]; 
                 userProfilePic.src = user.photoURL;
+                loadSearchHistory(user);
             } else {
                 loginBtn.style.display = "flex";
                 userProfile.style.display = "none";
+                // Signed out — clear any previously shown history from view
+                const historyHeading = document.getElementById("historyHeading");
+                const historyContainer = document.getElementById("historyContainer");
+                if (historyHeading) historyHeading.style.display = "none";
+                if (historyContainer) { historyContainer.style.display = "none"; historyContainer.innerHTML = ""; }
             }
         });
     </script>
