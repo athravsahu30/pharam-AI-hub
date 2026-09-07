@@ -59,6 +59,25 @@ const PharmaData = (function () {
     }
 
     // ---------- 2. RxNorm name normalization ----------
+
+    // Given an rxcui (for either a brand, salt-form, or ingredient concept),
+    // resolve it down to its plain ingredient/generic name via RxNorm's
+    // "related concepts" endpoint. Shared by rxNormalize() and by the
+    // spelling-correction path below, since both end up holding an rxcui
+    // that needs to become a clean generic name before hitting openFDA.
+    async function getIngredientName(rxcui) {
+        if (!rxcui) return null;
+        try {
+            const relRes = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/related.json?tty=IN`);
+            const relJson = await relRes.json();
+            const group = relJson && relJson.relatedGroup && relJson.relatedGroup.conceptGroup;
+            const ingredient = group && group.find(g => g.tty === 'IN');
+            return (ingredient && ingredient.conceptProperties && ingredient.conceptProperties[0] && ingredient.conceptProperties[0].name) || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function rxNormalize(name) {
         try {
             const res = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui.json?name=${encodeURIComponent(name)}`);
@@ -67,19 +86,98 @@ const PharmaData = (function () {
             const rxcui = json && json.idGroup && json.idGroup.rxnormId && json.idGroup.rxnormId[0];
             if (!rxcui) return null;
 
-            let genericName = null;
-            try {
-                const relRes = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui/${rxcui}/related.json?tty=IN`);
-                const relJson = await relRes.json();
-                const group = relJson && relJson.relatedGroup && relJson.relatedGroup.conceptGroup;
-                const ingredient = group && group.find(g => g.tty === 'IN');
-                genericName = ingredient && ingredient.conceptProperties && ingredient.conceptProperties[0] && ingredient.conceptProperties[0].name;
-            } catch (e) { /* ignore, rxcui still useful */ }
-
+            const genericName = await getIngredientName(rxcui);
             return { rxcui, genericName };
         } catch (e) {
             return null;
         }
+    }
+
+    // ---------- 2b. RxNorm approximate match — spelling correction ----------
+    // Catches typos ("paracetmol", "amoxicilin", "ibuprofn", "azithromicin")
+    // that fail the exact-match lookups above. RxNorm's approximateTerm
+    // endpoint runs a fuzzy search across its whole drug vocabulary and
+    // returns ranked candidates with a match score.
+    async function rxSpellCorrect(name) {
+        try {
+            const url = `https://rxnav.nlm.nih.gov/REST/approximateTerm.json?term=${encodeURIComponent(name)}&maxEntries=5`;
+            const res = await fetchWithTimeout(url);
+            if (!res.ok) return null;
+            const json = await res.json();
+            const candidates = json && json.approximateGroup && json.approximateGroup.candidate;
+            if (!candidates || !candidates.length) return null;
+
+            // Prefer the top-ranked candidate that actually has an rxcui.
+            const best = candidates.find(c => (c.rank === '1' || c.rank === 1) && c.rxcui) || candidates.find(c => c.rxcui);
+            if (!best || !best.rxcui) return null;
+
+            let correctedName = best.name || null;
+            if (!correctedName) {
+                try {
+                    const propRes = await fetchWithTimeout(`https://rxnav.nlm.nih.gov/REST/rxcui/${best.rxcui}/properties.json`);
+                    const propJson = await propRes.json();
+                    correctedName = propJson && propJson.properties && propJson.properties.name;
+                } catch (e) { /* ignore */ }
+            }
+            if (!correctedName) return null;
+
+            return { rxcui: best.rxcui, name: correctedName, score: best.score };
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ---------- Local fuzzy matching (Levenshtein) ----------
+    // Used to catch misspellings of the brand/generic-synonym names we
+    // already keep locally (BRAND_SYNONYMS / NAME_SYNONYMS) without a
+    // network round trip. RxNorm's approximate match (above) handles the
+    // long tail of everything else.
+    function levenshtein(a, b) {
+        const m = a.length, n = b.length;
+        if (m === 0) return n;
+        if (n === 0) return m;
+        const dp = new Array(n + 1);
+        for (let j = 0; j <= n; j++) dp[j] = j;
+        for (let i = 1; i <= m; i++) {
+            let prev = dp[0];
+            dp[0] = i;
+            for (let j = 1; j <= n; j++) {
+                const temp = dp[j];
+                dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+                prev = temp;
+            }
+        }
+        return dp[n];
+    }
+
+    function fuzzyMatchLocalMap(term, map) {
+        if (!term) return null;
+        if (map[term]) return term; // exact hit — no fuzziness needed
+        let best = null;
+        let bestDist = Infinity;
+        for (const key of Object.keys(map)) {
+            // Allow roughly one typo per 5 characters, minimum of 1.
+            const threshold = Math.max(1, Math.floor(key.length / 5));
+            const dist = levenshtein(term, key);
+            if (dist <= threshold && dist < bestDist) {
+                best = key;
+                bestDist = dist;
+            }
+        }
+        return best;
+    }
+
+    // Strips punctuation, dosage numbers/units, and dosage-form words so
+    // brand-name matching works on things like "Dolo 650", "Crocin 500mg
+    // Tablet", or "Combiflam Tab" the same way it works on "Dolo".
+    function cleanForLookup(raw) {
+        return String(raw || "")
+            .toLowerCase()
+            .replace(/[^a-z0-9\s]/g, " ")
+            .replace(/\b\d+(\.\d+)?\s?(mg|mcg|ml|g|iu)?\b/g, " ")
+            .replace(/\b(tablet|tablets|tab|tabs|capsule|capsules|cap|caps|syrup|injection|inj|drops|cream|ointment|gel|solution|suspension|sachet)\b/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
     }
 
     // ---------- 3. MedlinePlus Connect ----------
@@ -286,41 +384,175 @@ const PharmaData = (function () {
         return { dailymed, chemistry, trials, topReactions, recall, mechanism, ndc, articles };
     }
 
-    // Common India/International generic names that differ from the US
-    // name openFDA actually uses. Checked first so these always resolve
-    // correctly instead of depending on RxNorm's inconsistent mapping.
+    // Common India/International generic (INN/BAN) names that differ from
+    // the US Adopted Name (USAN) openFDA actually indexes under, plus
+    // common salt-form suffixes that openFDA's exact-match search won't
+    // strip on its own. Checked first so these always resolve correctly
+    // instead of depending on RxNorm's inconsistent mapping.
     const NAME_SYNONYMS = {
         "paracetamol": "acetaminophen",
         "salbutamol": "albuterol",
+        "levosalbutamol": "levalbuterol",
         "frusemide": "furosemide",
         "adrenaline": "epinephrine",
         "noradrenaline": "norepinephrine",
         "diclofenac sodium": "diclofenac",
-        "meropenem": "meropenem",
+        "diclofenac potassium": "diclofenac",
         "cetirizine hydrochloride": "cetirizine",
-        "domperidone": "domperidone",
-        "pantoprazole sodium": "pantoprazole"
+        "pantoprazole sodium": "pantoprazole",
+        "amoxycillin": "amoxicillin",
+        "amoxycillin trihydrate": "amoxicillin",
+        "amoxicillin trihydrate": "amoxicillin",
+        "sulphamethoxazole": "sulfamethoxazole",
+        "chlorhexidine gluconate": "chlorhexidine",
+        "levothyroxine sodium": "levothyroxine",
+        "metoprolol tartrate": "metoprolol",
+        "metoprolol succinate": "metoprolol",
+        "omeprazole magnesium": "omeprazole",
+        "esomeprazole magnesium": "esomeprazole",
+        "azithromycin dihydrate": "azithromycin",
+        "ciprofloxacin hydrochloride": "ciprofloxacin",
+        "ranitidine hydrochloride": "ranitidine",
+        "metformin hydrochloride": "metformin",
+        "atorvastatin calcium": "atorvastatin",
+        "rosuvastatin calcium": "rosuvastatin",
+        "amlodipine besylate": "amlodipine",
+        "amlodipine besilate": "amlodipine",
+        "losartan potassium": "losartan",
+        "telmisartan": "telmisartan",
+        "ondansetron hydrochloride": "ondansetron",
+        "tramadol hydrochloride": "tramadol",
+        "diphenhydramine hydrochloride": "diphenhydramine",
+        "mefenamic acid": "mefenamic acid",
+        "aceclofenac": "aceclofenac",
+        "clavulanic acid": "clavulanate"
+    };
+
+    // Common Indian/international BRAND names mapped to their primary
+    // active-ingredient generic name, so brand-name searches (which won't
+    // exist in openFDA's largely US-market brand database) still resolve.
+    // NOTE: several of these are combination products (e.g. Combiflam is
+    // ibuprofen + paracetamol) — for those, the map points at one
+    // representative active ingredient for lookup purposes only. This is a
+    // convenience layer, not a substitute for checking the full label.
+    const BRAND_SYNONYMS = {
+        "dolo": "paracetamol",
+        "crocin": "paracetamol",
+        "calpol": "paracetamol",
+        "pyrigesic": "paracetamol",
+        "tylenol": "acetaminophen",
+        "panadol": "paracetamol",
+        "ecosprin": "aspirin",
+        "disprin": "aspirin",
+        "loprin": "aspirin",
+        "combiflam": "ibuprofen",
+        "brufen": "ibuprofen",
+        "advil": "ibuprofen",
+        "flexon": "ibuprofen",
+        "volini": "diclofenac",
+        "voveran": "diclofenac",
+        "voltaren": "diclofenac",
+        "zerodol": "aceclofenac",
+        "meftal": "mefenamic acid",
+        "naprosyn": "naproxen",
+        "augmentin": "amoxicillin",
+        "amoxil": "amoxicillin",
+        "zithromax": "azithromycin",
+        "azee": "azithromycin",
+        "azithral": "azithromycin",
+        "ciplox": "ciprofloxacin",
+        "cifran": "ciprofloxacin",
+        "norflox": "norfloxacin",
+        "metrogyl": "metronidazole",
+        "flagyl": "metronidazole",
+        "pan": "pantoprazole",
+        "pantop": "pantoprazole",
+        "omez": "omeprazole",
+        "prilosec": "omeprazole",
+        "rantac": "ranitidine",
+        "zantac": "ranitidine",
+        "eltroxin": "levothyroxine",
+        "thyronorm": "levothyroxine",
+        "synthroid": "levothyroxine",
+        "glycomet": "metformin",
+        "glucophage": "metformin",
+        "amaryl": "glimepiride",
+        "lipitor": "atorvastatin",
+        "atorva": "atorvastatin",
+        "rosuvas": "rosuvastatin",
+        "crestor": "rosuvastatin",
+        "telma": "telmisartan",
+        "losar": "losartan",
+        "cozaar": "losartan",
+        "amlopres": "amlodipine",
+        "norvasc": "amlodipine",
+        "stamlo": "amlodipine",
+        "avil": "pheniramine",
+        "allegra": "fexofenadine",
+        "alerid": "cetirizine",
+        "cetzine": "cetirizine",
+        "zyrtec": "cetirizine",
+        "claritin": "loratadine",
+        "benadryl": "diphenhydramine",
+        "asthalin": "albuterol",
+        "levolin": "levalbuterol",
+        "deriphyllin": "theophylline",
+        "limcee": "ascorbic acid",
+        "tramazac": "tramadol",
+        "ultracet": "tramadol",
+        "diclomol": "diclofenac"
     };
 
     /**
      * Main entry point.
      * Returns a normalized object:
      * {
-     *   source: 'openfda' | 'openfda-rxnorm' | 'openfda-synonym' | 'medlineplus' | null,
+     *   source: 'brand-map' | 'openfda' | 'openfda-rxnorm' | 'openfda-synonym'
+     *           | 'medlineplus' | 'extras-only' | null,
      *   name: string,
+     *   brandInput: string | undefined,       // original brand name typed, if any
+     *   didYouMean: { from, to } | undefined,  // set when spelling was auto-corrected
      *   fda: <raw openFDA label result> | null,
      *   medline: [{title, link}] | null,
-     *   extras: { dailymed, chemistry, trials, topReactions, recall }
+     *   extras: { dailymed, chemistry, trials, topReactions, recall, ndc, articles, mechanism }
      * }
      * Returns null if nothing found anywhere.
+     *
+     * `_seen` is internal — it tracks names already tried in this call chain
+     * so brand-map / spelling-correction retries can't loop forever.
      */
-    async function fetchDrugInfo(rawName) {
-        const name = rawName.trim().toLowerCase();
-        if (!name) return null;
+    async function fetchDrugInfo(rawName, _seen) {
+        const original = String(rawName || "").trim();
+        if (!original) return null;
 
-        // 0. Known US-naming synonym (e.g. paracetamol -> acetaminophen)
-        if (NAME_SYNONYMS[name]) {
-            const usName = NAME_SYNONYMS[name];
+        const name = original.toLowerCase();
+        const seen = _seen || new Set();
+        if (seen.has(name)) return null;
+        seen.add(name);
+
+        const cleaned = cleanForLookup(original);
+
+        // 0. Brand-name recognition (exact, then fuzzy for typos like
+        //    "Crocine" or "Dolo 650mg"). Covers Indian/international OTC
+        //    and prescription brand names that openFDA's US-centric brand
+        //    database won't have.
+        const brandKey = fuzzyMatchLocalMap(cleaned, BRAND_SYNONYMS);
+        if (brandKey) {
+            const genericTarget = BRAND_SYNONYMS[brandKey];
+            const hit = await tryOpenFDA(genericTarget);
+            if (hit) {
+                const extras = await fetchExtras(genericTarget);
+                return { source: 'brand-map', name: genericTarget, brandInput: original, fda: hit, medline: null, extras };
+            }
+            const viaGeneric = await fetchDrugInfo(genericTarget, seen);
+            if (viaGeneric) return Object.assign({}, viaGeneric, { brandInput: original });
+        }
+
+        // 1. Known generic-name synonym (e.g. paracetamol -> acetaminophen),
+        //    exact then fuzzy so a typo'd generic name still resolves.
+        const synKey = fuzzyMatchLocalMap(name, NAME_SYNONYMS);
+        if (synKey) {
+            const usName = NAME_SYNONYMS[synKey];
             const synonymHit = await tryOpenFDA(usName);
             if (synonymHit) {
                 const extras = await fetchExtras(usName);
@@ -328,14 +560,14 @@ const PharmaData = (function () {
             }
         }
 
-        // 1. Direct openFDA
+        // 2. Direct openFDA (covers US generic names and US brand names)
         const direct = await tryOpenFDA(name);
         if (direct) {
             const extras = await fetchExtras(name);
             return { source: 'openfda', name, fda: direct, medline: null, extras };
         }
 
-        // 2. Normalize via RxNorm, retry openFDA with generic name
+        // 3. Normalize via RxNorm, retry openFDA with generic name
         const rx = await rxNormalize(name);
         if (rx && rx.genericName) {
             const retry = await tryOpenFDA(rx.genericName.toLowerCase());
@@ -345,7 +577,7 @@ const PharmaData = (function () {
             }
         }
 
-        // 3. MedlinePlus fallback (consumer-friendly info)
+        // 4. MedlinePlus fallback (consumer-friendly info)
         if (rx && rx.rxcui) {
             const medline = await tryMedlinePlus(rx.rxcui);
             if (medline) {
@@ -355,8 +587,25 @@ const PharmaData = (function () {
             }
         }
 
-        // 4. Last resort — chemistry/trials may still know this name
-        //    even when openFDA/RxNorm/MedlinePlus have nothing.
+        // 5. Spelling correction (RxNorm approximate match) — only tried
+        //    once per search, and only trusted if it actually leads
+        //    somewhere, so an unresolvable typo still reports "not found"
+        //    instead of silently guessing.
+        if (!seen.has('__spellchecked__')) {
+            seen.add('__spellchecked__');
+            const suggestion = await rxSpellCorrect(name);
+            if (suggestion && suggestion.name && suggestion.name.toLowerCase() !== name) {
+                const ingredientName = await getIngredientName(suggestion.rxcui);
+                const retryTerm = ingredientName || suggestion.name;
+                const viaCorrection = await fetchDrugInfo(retryTerm, seen);
+                if (viaCorrection) {
+                    return Object.assign({}, viaCorrection, { didYouMean: { from: original, to: retryTerm } });
+                }
+            }
+        }
+
+        // 6. Last resort — chemistry/trials/articles may still know this
+        //    name even when openFDA/RxNorm/MedlinePlus have nothing.
         const extras = await fetchExtras(name);
         if (extras.chemistry || (extras.trials && extras.trials.length) || (extras.articles && extras.articles.length)) {
             return { source: 'extras-only', name, fda: null, medline: null, extras };
