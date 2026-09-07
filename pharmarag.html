@@ -354,6 +354,9 @@
                 return;
             }
             drugInput.value = query;
+            if (typeof window.saveSearchToHistory === "function") {
+                window.saveSearchToHistory(query);
+            }
 
             resultBox.style.display = "none";
             loader.style.display = "block";
@@ -387,6 +390,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Yahan Aapki Same Firebase Config
         const firebaseConfig = {
@@ -401,7 +405,21 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const provider = new GoogleAuthProvider();
+
+        window.pharmaAuth = auth;
+        window.saveSearchToHistory = async function(term) {
+            const user = auth.currentUser;
+            if (!user) return;
+            try {
+                await addDoc(collection(db, "search_history"), {
+                    uid: user.uid,
+                    term: term,
+                    timestamp: serverTimestamp()
+                });
+            } catch (e) { console.error("History Save Error:", e); }
+        };
 
         const loginBtn = document.getElementById("googleLoginBtn");
         const userProfile = document.getElementById("userProfile");
