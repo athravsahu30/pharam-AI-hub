@@ -154,6 +154,73 @@
         .dashboard-search input::placeholder { color: var(--ink-soft); }
         .dashboard-search button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 15px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .dashboard-search button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+        .card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; }
+
+        /* ---- Big Hero Banner Slides ---- */
+        .slides-wrap { margin: 20px 0 28px; }
+        .slides-track {
+            position: relative;
+            border-radius: 20px;
+            min-height: 280px;
+            overflow: hidden;
+            border: 1px solid var(--card-border-strong);
+        }
+        .slide {
+            display: none;
+            position: relative;
+            min-height: 280px;
+            padding: 40px 44px;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            overflow: hidden;
+        }
+        .slide.active { display: flex; animation: slideFadeIn 0.6s ease; }
+        @keyframes slideFadeIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+
+        .slide-bg-1 { background: linear-gradient(135deg, #0A1330 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(76,141,255,0.35), transparent 55%); }
+        .slide-bg-2 { background: linear-gradient(135deg, #071A1E 0%, #04060C 60%), radial-gradient(circle at 85% 25%, rgba(34,211,238,0.30), transparent 55%); }
+        .slide-bg-3 { background: linear-gradient(135deg, #1A0F2E 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(167,139,250,0.30), transparent 55%); }
+
+        .slide-orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; z-index: 0; }
+        .slide-orb-1 { width: 220px; height: 220px; top: -60px; right: 40px; background: var(--blue); }
+        .slide-orb-2 { width: 180px; height: 180px; bottom: -50px; right: 160px; background: var(--cyan); }
+
+        .slide-badge {
+            position: relative; z-index: 1;
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            padding: 5px 14px; border-radius: 20px; margin-bottom: 16px;
+            background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18); color: var(--cyan);
+        }
+        .slide-icon-big {
+            position: relative; z-index: 1;
+            font-size: 40px; margin-bottom: 14px;
+        }
+        .slide h2 { position: relative; z-index: 1; font-size: 30px; color: #fff; margin-bottom: 10px; font-family: 'Space Grotesk', sans-serif; max-width: 65%; }
+        .slide h2 span { background: linear-gradient(135deg, var(--cyan), var(--blue-bright)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .slide p { position: relative; z-index: 1; font-size: 14.5px; color: rgba(255,255,255,0.75); line-height: 1.6; max-width: 60%; margin: 0 0 20px; }
+        .slide-btn {
+            position: relative; z-index: 1;
+            display: inline-flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C;
+            font-weight: 700; font-size: 14px; padding: 12px 24px; border-radius: 10px;
+            text-decoration: none;
+        }
+        .slide-footer { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+        .slide-footer img { width: 30px; height: 30px; border-radius: 50%; }
+        .slide-footer-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 12px; }
+        .slide-footer span { font-size: 12.5px; color: rgba(255,255,255,0.65); }
+
+        .slides-dots { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--card-border-strong); cursor: pointer; transition: 0.2s; }
+        .dot.active { background: var(--cyan); width: 22px; border-radius: 4px; }
+
+        @media (max-width: 700px) {
+            .slide { padding: 28px 24px; min-height: 260px; }
+            .slide h2, .slide p { max-width: 100%; }
+            .slide h2 { font-size: 22px; }
+        }
 
         /* ---- Inline drug search result (same design as PharmaRAG) ---- */
         .result-container { display: none; background: var(--card); border: 1px solid var(--card-border); padding: 22px; border-radius: 16px; margin-bottom: 24px; font-size: 15px; color: var(--ink); opacity: 0; animation: fadeInUp 0.5s ease forwards; }
@@ -316,24 +383,58 @@
             </div>
         </section>
 
-        <!-- Drug Explorer -->
-        <div class="section-heading" style="margin-top:8px;">
-            <h2>🔍 Drug Explorer</h2>
-            <p style="font-size:13px; color:var(--ink-soft); margin:2px 0 0;">Search generic medicines — uses, side effects, ADR, and dosage by age group.</p>
-        </div>
-        <div class="dashboard-search">
-            <input type="text" id="dashSearchInput" placeholder="Search drug name...">
-            <button id="dashSearchBtn">🔍 Search</button>
+        <!-- About PharmaAI Hub — Big Hero Slides -->
+        <div class="slides-wrap reveal-item r1">
+            <div class="slides-track" id="slidesTrack">
+
+                <div class="slide active slide-bg-1">
+                    <div class="slide-orb slide-orb-1"></div>
+                    <div class="slide-orb slide-orb-2"></div>
+                    <div class="slide-badge">⚕️ Official Platform</div>
+                    <h2>Welcome to <span>PharmaAI Hub</span></h2>
+                    <p>An AI-powered pharmaceutical intelligence platform — search medicines, understand drug interactions, and read prescriptions instantly, all backed by real medical data.</p>
+                </div>
+
+                <div class="slide slide-bg-2">
+                    <div class="slide-orb slide-orb-1"></div>
+                    <div class="slide-orb slide-orb-2"></div>
+                    <div class="slide-badge">🔍 Feature</div>
+                    <div class="slide-icon-big">🔍</div>
+                    <h2>Smart <span>Drug Search</span></h2>
+                    <p>Access 10,000+ medicines with real-time data pulled from openFDA, RxNorm, MedlinePlus, and other trusted free medical databases.</p>
+                    <a href="pharmarag.html" class="slide-btn">Explore Now →</a>
+                </div>
+
+                <div class="slide slide-bg-3">
+                    <div class="slide-orb slide-orb-1"></div>
+                    <div class="slide-orb slide-orb-2"></div>
+                    <div class="slide-badge">👨‍💻 The Team</div>
+                    <h2>Made by a <span>B.Pharm Student</span></h2>
+                    <p>PharmaAI Hub is built and maintained by a B.Pharm student passionate about combining pharmacy knowledge with AI to make drug information easier to access.</p>
+                    <div class="slide-footer">
+                        <div class="slide-footer-avatar">AS</div>
+                        <span>Athrav Sahu — Founder &amp; Developer</span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="slides-dots" id="slidesDots">
+                <span class="dot active" data-i="0"></span>
+                <span class="dot" data-i="1"></span>
+                <span class="dot" data-i="2"></span>
+            </div>
         </div>
 
-        <!-- Inline Search Result -->
-        <div class="loader" id="dashLoader" style="display:none;">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line" style="width: 70%;"></div>
+        <!-- Welcome Message -->
+        <div class="card" style="margin-top:8px; margin-bottom:24px; padding:22px 24px;">
+            <h2 style="font-size:18px; margin-bottom:8px;">👋 Great to have you here!</h2>
+            <p style="font-size:14px; color:var(--ink-soft); line-height:1.6; margin-bottom:16px;">
+                PharmaAI Hub helps you look up medicines, understand adverse drug reactions, and read prescriptions — all in one place.
+            </p>
+            <p style="font-size:13.5px; color:var(--ink-soft); line-height:1.7; border-top:1px solid var(--card-border); padding-top:16px; margin:0;">
+                Built by a B.Pharm student for pharmacy students and professionals, PharmaAI Hub combines free, verified medical data — from openFDA, RxNorm, MedlinePlus, PubChem, and ClinicalTrials.gov — with AI-powered tools, so you don't have to jump between a dozen websites to get reliable drug information.
+            </p>
         </div>
-        <div class="result-container" id="dashResultBox"></div>
 
         <!-- Recent Search History -->
         <div class="section-heading" id="historyHeading" style="display: none; margin-top: 5px;">
@@ -388,6 +489,24 @@
             if (splash) {
                 setTimeout(() => splash.classList.add("hide"), 900);
                 setTimeout(() => splash.remove(), 1500);
+            }
+
+            // About Us slides carousel
+            const slides = document.querySelectorAll("#slidesTrack .slide");
+            const dots = document.querySelectorAll("#slidesDots .dot");
+            let currentSlide = 0;
+            function showSlide(i) {
+                slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+                dots.forEach((d, idx) => d.classList.toggle("active", idx === i));
+                currentSlide = i;
+            }
+            if (slides.length) {
+                dots.forEach((dot) => {
+                    dot.addEventListener("click", () => showSlide(Number(dot.dataset.i)));
+                });
+                setInterval(() => {
+                    showSlide((currentSlide + 1) % slides.length);
+                }, 4500);
             }
 
             const menuBtn = document.getElementById("menuBtn");
@@ -552,185 +671,7 @@
                 } catch (error) { console.error("Tracking Error:", error); }
             }
 
-            // 2. Search & History Saving Logic
-            const dashSearchBtn = document.getElementById("dashSearchBtn");
-            const dashSearchInput = document.getElementById("dashSearchInput");
-            const dashLoader = document.getElementById("dashLoader");
-            const dashResultBox = document.getElementById("dashResultBox");
-
-            function splitSentences(text, maxChars) {
-                if (!text) return "";
-                if (text.length <= maxChars) return text;
-                const cut = text.substring(0, maxChars);
-                const lastPeriod = cut.lastIndexOf(". ");
-                return (lastPeriod > 100 ? cut.substring(0, lastPeriod + 1) : cut) + " …";
-            }
-
-            async function renderStructuredResult(info) {
-                const extras = info.extras || {};
-
-                function section(colorClass, icon, title, contentHtml, sourceLabel) {
-                    return `<div class="result-section ${colorClass}">
-                        <h3>${icon} ${title}</h3>
-                        ${contentHtml}
-                        ${sourceLabel ? `<span class="src-note">Source: ${sourceLabel}</span>` : ""}
-                    </div>`;
-                }
-
-                function bilingualBlock(englishText, hindiText) {
-                    let block = `<p>${englishText}</p>`;
-                    if (hindiText) {
-                        block += `<p lang="hi" style="margin-top:8px; color:var(--ink-soft); border-left:2px solid var(--card-border-strong); padding-left:10px;">🇮🇳 <b>हिंदी:</b> ${hindiText}</p>`;
-                    }
-                    return block;
-                }
-
-                const sourceNote = info.source === 'openfda-synonym'
-                    ? `Matched via US generic name`
-                    : info.source === 'openfda-rxnorm'
-                    ? `Matched via RxNorm → generic name`
-                    : info.source === 'openfda' ? `Direct FDA label match`
-                    : info.source === 'medlineplus' ? `MedlinePlus (FDA label not available)`
-                    : `Limited data`;
-
-                let html = `<h2 class="result-title">✅ ${info.name.toUpperCase()} <span class="tag">(${sourceNote})</span></h2>`;
-
-                if (extras.recall) {
-                    html += `<div class="result-recall"><b style="color:var(--red);">⚠️ Recall / Safety Alert:</b> ${splitSentences(extras.recall.reason, 200)}</div>`;
-                }
-
-                if (info.fda) {
-                    const f = info.fda;
-                    const usesText = f.indications_and_usage ? splitSentences(f.indications_and_usage[0], 400) : "Data not available.";
-                    const adrText = f.adverse_reactions ? splitSentences(f.adverse_reactions[0], 350) : "Data not available.";
-                    const adultDoseText = f.dosage_and_administration ? splitSentences(f.dosage_and_administration[0], 300) : "Refer to package label / consult pharmacist.";
-
-                    const [usesHi, adrHi, doseHi] = await Promise.all([
-                        PharmaData.translateToHindi(usesText),
-                        PharmaData.translateToHindi(adrText),
-                        PharmaData.translateToHindi(adultDoseText)
-                    ]);
-
-                    html += section('sec-blue', '💊', 'Uses / Indications', bilingualBlock(usesText, usesHi));
-                    html += section('sec-orange', '⚠️', 'Side Effects', bilingualBlock(adrText, adrHi));
-
-                    if (f.warnings || f.warnings_and_cautions) {
-                        html += section('sec-red', '🚫', 'Warnings', `<p>${splitSentences((f.warnings || f.warnings_and_cautions)[0], 300)}</p>`);
-                    }
-                    if (f.drug_interactions) {
-                        html += section('sec-purple', '🔀', 'Drug Interactions', `<p>${splitSentences(f.drug_interactions[0], 250)}</p>`);
-                    }
-
-                    let dosageHtml = `<ul>
-                        <li><b>Adult / General:</b> ${adultDoseText}${doseHi ? `<br><span lang="hi" style="color:var(--ink-soft);">🇮🇳 ${doseHi}</span>` : ""}</li>
-                        <li><b>Child (Pediatric):</b> ${f.pediatric_use ? splitSentences(f.pediatric_use[0], 250) : "Specific pediatric dosing not listed — consult a pediatrician."}</li>
-                        <li><b>Old Age (Geriatric):</b> ${f.geriatric_use ? splitSentences(f.geriatric_use[0], 250) : "No specific geriatric adjustment listed — consult a doctor."}</li>
-                    </ul>`;
-                    if (extras.ndc && (extras.ndc.route || extras.ndc.dosageForm || extras.ndc.manufacturer)) {
-                        dosageHtml += `<p style="font-size:12.5px; color:var(--ink-soft); margin-top:10px;">`;
-                        if (extras.ndc.dosageForm) dosageHtml += `Form: ${extras.ndc.dosageForm} · `;
-                        if (extras.ndc.route) dosageHtml += `Route: ${extras.ndc.route} · `;
-                        if (extras.ndc.manufacturer) dosageHtml += `Manufacturer: ${extras.ndc.manufacturer}`;
-                        dosageHtml += `</p>`;
-                    }
-                    html += section('sec-green', '📋', 'Dosage Form', dosageHtml, 'US FDA (OpenFDA API)');
-
-                } else if (info.medline) {
-                    const items = info.medline.slice(0, 4).map(m =>
-                        `<li><a href="${m.link}" target="_blank" rel="noopener" style="color:var(--blue-bright);">${m.title}</a></li>`
-                    ).join("");
-                    html += section('sec-blue', '💊', 'What We Found', `<p style="margin-bottom:8px;">FDA label text wasn't available, but MedlinePlus (NIH) has consumer info:</p><ul>${items}</ul>`, 'MedlinePlus Connect (NIH)');
-                } else {
-                    html += `<p style="color:var(--ink-soft); margin-bottom:14px;">Full label text isn't available for this drug — see extra info below.</p>`;
-                }
-
-                if (extras.mechanism && extras.mechanism.mechanismOfAction) {
-                    html += section('sec-cyan', '🎯', 'Mechanism of Action', `<p>${extras.mechanism.mechanismOfAction}${extras.mechanism.targetName ? ` (Target: ${extras.mechanism.targetName})` : ""}</p>`, 'ChEMBL (EMBL-EBI)');
-                }
-                if (extras.topReactions && extras.topReactions.length) {
-                    const items = extras.topReactions.map(r => `<li>${r.term.toLowerCase()} — ${r.count} reports</li>`).join("");
-                    html += section('sec-orange', '📊', 'Most-Reported Real-World Side Effects', `<ul>${items}</ul>`, 'openFDA Adverse Event Reports');
-                }
-                if (extras.chemistry) {
-                    let chemHtml = `<p>`;
-                    if (extras.chemistry.formula) chemHtml += `Formula: <b>${extras.chemistry.formula}</b> · `;
-                    if (extras.chemistry.weight) chemHtml += `Molecular Weight: ${extras.chemistry.weight}`;
-                    chemHtml += `</p>`;
-                    html += section('sec-cyan', '🧪', 'Chemistry', chemHtml, 'PubChem (NIH)');
-                }
-                if (extras.trials && extras.trials.length) {
-                    const items = extras.trials.map(t => `<li><a href="${t.link}" target="_blank" rel="noopener" style="color:var(--blue-bright);">${t.title}</a> (${t.status || "status unknown"})</li>`).join("");
-                    html += section('sec-blue', '🔬', 'Related Research Studies', `<ul>${items}</ul>`, 'ClinicalTrials.gov');
-                }
-                if (extras.articles && extras.articles.length) {
-                    const items = extras.articles.map(a => `<li><a href="${a.link}" target="_blank" rel="noopener" style="color:var(--blue-bright);">${a.title}</a></li>`).join("");
-                    html += section('sec-purple', '📚', 'Related Research Articles', `<ul>${items}</ul>`, 'PubMed (NCBI)');
-                }
-                if (extras.dailymed) {
-                    html += `<p style="margin-top:4px;">📄 <a href="${extras.dailymed.link}" target="_blank" rel="noopener" style="color:var(--blue-bright);">View official FDA label on DailyMed →</a></p>`;
-                }
-
-                return html;
-            }
-
-            // ===== "Get well soon" email — sent every time a user logs in =====
-            async function sendLoginEmail(user) {
-                if (!user || !user.email) return;
-                if (typeof emailjs === "undefined") return;
-                if (EMAILJS_PUBLIC_KEY.indexOf("PASTE_") === 0) return; // not configured yet
-
-                try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-                        to_email: user.email,
-                        to_name: (user.displayName || "there").split(" ")[0],
-                        from_name: "Developer Team, PharmaAI Hub by Athrav"
-                    });
-                } catch (error) {
-                    console.error("Login email failed:", error);
-                }
-            }
-
-            async function handleSearch() {
-                if(!dashSearchInput) return;
-                const searchTerm = dashSearchInput.value.trim();
-                if (!searchTerm) return;
-
-                const user = auth.currentUser;
-                if (user) {
-                    try {
-                        await addDoc(collection(db, "search_history"), {
-                            uid: user.uid,
-                            term: searchTerm,
-                            timestamp: serverTimestamp()
-                        });
-                    } catch (error) { console.error("History Save Error:", error); }
-                }
-
-                dashResultBox.style.display = "none";
-                dashLoader.style.display = "block";
-
-                const info = await PharmaData.fetchDrugInfo(searchTerm);
-
-                if (!info) {
-                    dashLoader.style.display = "none";
-                    dashResultBox.innerHTML = `<h3 style="color:var(--red);">❌ Not Found</h3><p>"${searchTerm}" kisi bhi free database me nahi mila. Generic naam try karein (jaise Paracetamol, Ibuprofen, Amoxicillin).</p>`;
-                    dashResultBox.style.display = "block";
-                    return;
-                }
-
-                dashResultBox.innerHTML = await renderStructuredResult(info);
-                dashLoader.style.display = "none";
-                dashResultBox.style.display = "block";
-            }
-
-            if(dashSearchBtn) dashSearchBtn.addEventListener("click", handleSearch);
-            if(dashSearchInput) {
-                dashSearchInput.addEventListener("keypress", (e) => {
-                    if (e.key === "Enter") handleSearch();
-                });
-            }
-
-            // 3. Fetch History Logic
+            // 2. Fetch History Logic
             async function loadSearchHistory(user) {
                 const historyContainer = document.getElementById("historyContainer");
                 const historyHeading = document.getElementById("historyHeading");
@@ -759,7 +700,7 @@
                             const tag = document.createElement("div");
                             tag.className = "history-tag";
                             tag.innerHTML = `🕒 ${data.term}`;
-                            tag.onclick = () => { dashSearchInput.value = data.term; handleSearch(); };
+                            tag.onclick = () => { window.location.href = `pharmarag.html?q=${encodeURIComponent(data.term)}`; };
                             historyContainer.appendChild(tag);
                         });
                     }
