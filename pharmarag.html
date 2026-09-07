@@ -6,7 +6,7 @@
     <title>PharmaAI Hub - Drug Explorer</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <script src="pharma-data.js?v=3"></script>
+    <script src="pharma-data.js?v=4"></script>
     
     <style>
         :root {
@@ -171,7 +171,7 @@
         <div class="search-wrapper">
             <div class="search-header">
                 <h2>Explore Medicine Data</h2>
-                <p>Search generic medicines — uses, side effects, ADR, and dosage by age group, from openFDA + 5 other free NIH databases.</p>
+                <p>Search generic or brand-name medicines — uses, side effects, ADR, and dosage by age group, from openFDA + 5 other free NIH databases. Misspelled names and common Indian/international brand names (Dolo, Crocin, Combiflam, etc.) are recognized automatically.</p>
             </div>
             <div class="search-box">
                 <input type="text" id="drugInput" placeholder="e.g. Paracetamol, Amoxicillin..." onkeypress="handleEnter(event)">
@@ -261,7 +261,9 @@
                 return block;
             }
 
-            const sourceNote = info.source === 'openfda-synonym'
+            const sourceNote = info.source === 'brand-map'
+                ? `Brand name recognized → generic name`
+                : info.source === 'openfda-synonym'
                 ? `Matched via US generic name`
                 : info.source === 'openfda-rxnorm'
                 ? `Matched via RxNorm → generic name`
@@ -270,6 +272,14 @@
                 : `Limited data`;
 
             let html = `<h2 class="result-title">✅ ${info.name.toUpperCase()} <span class="tag">(${sourceNote})</span></h2>`;
+
+            if (info.brandInput) {
+                html += `<p style="color:var(--ink-soft); font-size:12.5px; margin:-8px 0 14px;">🏷️ Brand name <b style="color:var(--ink);">${info.brandInput}</b> recognized as generic <b style="color:var(--ink);">${info.name}</b>. Combination products are mapped to one representative ingredient — check the full label for the complete composition.</p>`;
+            }
+
+            if (info.didYouMean) {
+                html += `<p style="color:var(--ink-soft); font-size:12.5px; margin:-8px 0 14px;">✏️ Did you mean <b style="color:var(--ink);">${info.didYouMean.to}</b>? Showing corrected results for "${info.didYouMean.from}".</p>`;
+            }
 
             if (extras.recall) {
                 html += `<div class="result-recall"><b style="color:var(--red);">⚠️ Recall / Safety Alert:</b> ${splitSentences(extras.recall.reason, 200)}</div>`;
@@ -377,7 +387,7 @@
 
             if (!info) {
                 loader.style.display = "none";
-                resultBox.innerHTML = `<h3 style="color:var(--red);">❌ Not Found</h3><p>"${query}" kisi bhi free database (openFDA / RxNorm / MedlinePlus / DailyMed / PubChem / ClinicalTrials / ChEMBL / PubMed) me nahi mila. Spelling check karein ya generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin). Indian brand names (Dolo, Crocin) match nahi karenge — generic naam use karein (Paracetamol).</p>`;
+                resultBox.innerHTML = `<h3 style="color:var(--red);">❌ Not Found</h3><p>"${query}" kisi bhi free database (openFDA / RxNorm / MedlinePlus / DailyMed / PubChem / ClinicalTrials / ChEMBL / PubMed) me nahi mila — sath hi spelling-correction aur brand-name lookup try karne ke baad bhi. Common Indian/international brand names (Dolo, Crocin, Combiflam, etc.) aur misspelt generic names ab automatically resolve ho jaate hain; agar phir bhi nahi mila to poora generic naam try karein (jaise Ibuprofen, Aspirin, Amoxicillin).</p>`;
                 resultBox.style.display = "block";
                 return;
             }
