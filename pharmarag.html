@@ -58,8 +58,63 @@
         .search-header p { color: var(--ink-soft); font-size: 14px; }
         
         .search-box { display: flex; gap: 12px; }
-        .search-box input { flex: 1; padding: 15px 20px; border-radius: 12px; border: 1px solid var(--card-border-strong); background: rgba(0,0,0,0.3); color: white; font-size: 16px; outline: none; font-family: inherit; transition: 0.3s; }
-        .search-box input:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(34,211,238,0.2); }
+        
+        /* =========================================
+           Gemini-Style Animated Search Glow
+           ========================================= */
+        .gemini-search-wrapper {
+            position: relative;
+            display: flex;
+            flex: 1; /* Takes full available width */
+            border-radius: 12px;
+            background: transparent;
+            z-index: 1;
+        }
+
+        .gemini-search-wrapper::before {
+            content: "";
+            position: absolute;
+            inset: -2px; /* Slight overflow for glow */
+            border-radius: 14px;
+            background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #4285f4);
+            background-size: 300% 300%;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        .gemini-search-wrapper:focus-within::before {
+            opacity: 1;
+            animation: geminiGlow 3s ease infinite;
+            filter: blur(4px);
+        }
+
+        @keyframes geminiGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Input styling inside the new wrapper */
+        .gemini-search-wrapper input {
+            width: 100%;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border-strong);
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+            outline: none;
+            font-family: inherit;
+            transition: 0.3s;
+            z-index: 2;
+        }
+
+        .gemini-search-wrapper input:focus {
+            border-color: transparent; /* Let the glow shine through */
+        }
+        /* ========================================= */
+
         .search-box button { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 0 25px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
         .search-box button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
@@ -174,7 +229,10 @@
                 <p>Search generic or brand-name medicines — uses, side effects, ADR, and dosage by age group, from openFDA + 5 other free NIH databases. Misspelled names and common Indian/international brand names (Dolo, Crocin, Combiflam, etc.) are recognized automatically.</p>
             </div>
             <div class="search-box">
-                <input type="text" id="drugInput" placeholder="e.g. Paracetamol, Amoxicillin..." onkeypress="handleEnter(event)">
+                <!-- Gemini Animated Wrapper -->
+                <div class="gemini-search-wrapper">
+                    <input type="text" id="drugInput" placeholder="e.g. Paracetamol, Amoxicillin..." onkeypress="handleEnter(event)" autocomplete="off">
+                </div>
                 <button id="searchBtn">🔍 Search Drug</button>
             </div>
         </div>
