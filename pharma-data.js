@@ -167,15 +167,17 @@ const PharmaData = (function () {
         return best;
     }
 
-    // Strips punctuation, dosage numbers/units, and dosage-form words so
-    // brand-name matching works on things like "Dolo 650", "Crocin 500mg
-    // Tablet", or "Combiflam Tab" the same way it works on "Dolo".
+    // Strips punctuation, dosage numbers/units, dosage-form words, and
+    // Indian pharma release-type suffixes (SR/ER/XL/OD/etc.) so brand-name
+    // matching works on things like "Dolo 650", "Crocin 500mg Tablet", or
+    // "Acenac-SR" the same way it works on "Dolo" / "Acenac".
     function cleanForLookup(raw) {
         return String(raw || "")
             .toLowerCase()
             .replace(/[^a-z0-9\s]/g, " ")
             .replace(/\b\d+(\.\d+)?\s?(mg|mcg|ml|g|iu)?\b/g, " ")
             .replace(/\b(tablet|tablets|tab|tabs|capsule|capsules|cap|caps|syrup|injection|inj|drops|cream|ointment|gel|solution|suspension|sachet)\b/g, " ")
+            .replace(/\b(sr|er|xl|xr|od|cr|dt|ds|mr|la|cd|rd|pd|plus|forte)\b/g, " ")
             .replace(/\s+/g, " ")
             .trim();
     }
@@ -453,10 +455,15 @@ const PharmaData = (function () {
         "voveran": "diclofenac",
         "voltaren": "diclofenac",
         "zerodol": "aceclofenac",
+        "acenac": "aceclofenac",
+        "aceclo": "aceclofenac",
+        "hifenac": "aceclofenac",
+        "movexx": "aceclofenac",
         "meftal": "mefenamic acid",
         "naprosyn": "naproxen",
         "augmentin": "amoxicillin",
         "amoxil": "amoxicillin",
+        "moxikind": "amoxicillin",
         "zithromax": "azithromycin",
         "azee": "azithromycin",
         "azithral": "azithromycin",
@@ -467,6 +474,7 @@ const PharmaData = (function () {
         "flagyl": "metronidazole",
         "pan": "pantoprazole",
         "pantop": "pantoprazole",
+        "pantocid": "pantoprazole",
         "omez": "omeprazole",
         "prilosec": "omeprazole",
         "rantac": "ranitidine",
@@ -500,7 +508,23 @@ const PharmaData = (function () {
         "limcee": "ascorbic acid",
         "tramazac": "tramadol",
         "ultracet": "tramadol",
-        "diclomol": "diclofenac"
+        "diclomol": "diclofenac",
+        "nise": "nimesulide",
+        "nimulid": "nimesulide",
+        "sumo": "nimesulide",
+        "dolonex": "piroxicam",
+        "myoril": "thiocolchicoside",
+        "chymoral": "chymotrypsin",
+        "unienzyme": "papain",
+        "digene": "aluminum hydroxide",
+        "gelusil": "aluminum hydroxide",
+        "cyclopam": "dicyclomine",
+        "meftalspas": "dicyclomine",
+        "vertin": "betahistine",
+        "stemetil": "prochlorperazine",
+        "emeset": "ondansetron",
+        "ondem": "ondansetron",
+        "pcm": "paracetamol"
     };
 
     /**
