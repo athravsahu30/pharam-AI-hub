@@ -111,10 +111,10 @@
         </div>
         <nav class="navigation">
             <div class="nav-label">MAIN MENU</div>
-            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Home</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="#" class="nav-item active"><span class="nav-icon">📄</span> AI Prescription</a>
-            <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
+            <a href="admin.html" class="nav-item" id="adminNavLink" style="display:none;"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
 
@@ -309,6 +309,14 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
+        // Only these accounts can see/use the Admin section
+        const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+        function toggleAdminNav(user) {
+            const adminNavLink = document.getElementById("adminNavLink");
+            if (!adminNavLink) return;
+            adminNavLink.style.display = (user && ADMIN_EMAILS.includes(user.email)) ? "flex" : "none";
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const loginBtn = document.getElementById("googleLoginBtn");
             const userProfile = document.getElementById("userProfile");
@@ -322,6 +330,7 @@
             }
 
             onAuthStateChanged(auth, (user) => {
+                toggleAdminNav(user);
                 if (user) {
                     if(loginBtn) loginBtn.style.display = "none"; 
                     if(userProfile) userProfile.style.display = "flex"; 
