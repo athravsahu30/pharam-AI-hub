@@ -140,11 +140,33 @@
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
         /* ===================== HERO SECTION ===================== */
-        .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 35px; border-radius: 16px; margin-bottom: 30px; background: var(--card); border: 1px solid var(--card-border); }
+        .hero { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 35px; border-radius: 16px; margin-bottom: 30px; background: var(--card); border: 1px solid var(--card-border); position: relative; overflow: hidden; }
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background: radial-gradient(circle, rgba(76,141,255,0.20), rgba(34,211,238,0.10) 40%, transparent 70%);
+            background-size: 200% 200%;
+            z-index: 0;
+            animation: heroGlow 6s ease-in-out infinite;
+        }
+        .hero > * { position: relative; z-index: 1; }
+        @keyframes heroGlow {
+            0%, 100% { background-position: 20% 30%; opacity: 0.6; }
+            50%      { background-position: 80% 70%; opacity: 1; }
+        }
         .status { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 16px; background: rgba(76,141,255,0.14); color: var(--blue-bright); border: 1px solid var(--card-border); font-weight: 500;}
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
         .hero-content h2 { font-size: 34px; line-height: 1.2; margin-bottom: 14px; color: var(--ink); margin-top: 0; }
         .hero-content h2 span { color: var(--blue-bright); }
+        .typing-cursor::after {
+            content: "|";
+            display: inline-block;
+            margin-left: 2px;
+            color: var(--cyan);
+            animation: blinkCursor 0.8s step-start infinite;
+        }
+        @keyframes blinkCursor { 50% { opacity: 0; } }
         .hero-content p { font-size: 15px; margin-bottom: 0; color: var(--ink-soft); line-height: 1.6;}
 
         /* ===================== DASHBOARD SEARCH & HISTORY ===================== */
@@ -178,13 +200,26 @@
         .slide.active { display: flex; animation: slideFadeIn 0.6s ease; }
         @keyframes slideFadeIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
 
-        .slide-bg-1 { background: linear-gradient(135deg, #0A1330 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(76,141,255,0.35), transparent 55%); }
-        .slide-bg-2 { background: linear-gradient(135deg, #071A1E 0%, #04060C 60%), radial-gradient(circle at 85% 25%, rgba(34,211,238,0.30), transparent 55%); }
-        .slide-bg-3 { background: linear-gradient(135deg, #1A0F2E 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(167,139,250,0.30), transparent 55%); }
+        .slide-bg-1 { background: linear-gradient(135deg, #0A1330 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(76,141,255,0.35), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
+        .slide-bg-2 { background: linear-gradient(135deg, #071A1E 0%, #04060C 60%), radial-gradient(circle at 85% 25%, rgba(34,211,238,0.30), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
+        .slide-bg-3 { background: linear-gradient(135deg, #1A0F2E 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(167,139,250,0.30), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
+        @keyframes bgDrift {
+            0%, 100% { background-position: 0% 0%, 80% 20%; }
+            50%      { background-position: 10% 10%, 60% 35%; }
+        }
 
         .slide-orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; z-index: 0; }
-        .slide-orb-1 { width: 220px; height: 220px; top: -60px; right: 40px; background: var(--blue); }
-        .slide-orb-2 { width: 180px; height: 180px; bottom: -50px; right: 160px; background: var(--cyan); }
+        .slide-orb-1 { width: 220px; height: 220px; top: -60px; right: 40px; background: var(--blue); animation: floatOrb1 9s ease-in-out infinite; }
+        .slide-orb-2 { width: 180px; height: 180px; bottom: -50px; right: 160px; background: var(--cyan); animation: floatOrb2 11s ease-in-out infinite; }
+        @keyframes floatOrb1 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33%      { transform: translate(-40px, 30px) scale(1.15); }
+            66%      { transform: translate(20px, -20px) scale(0.9); }
+        }
+        @keyframes floatOrb2 {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50%      { transform: translate(-50px, -25px) scale(1.2); }
+        }
 
         .slide-badge {
             position: relative; z-index: 1;
@@ -409,7 +444,7 @@
                     <div class="slide-orb slide-orb-1"></div>
                     <div class="slide-orb slide-orb-2"></div>
                     <div class="slide-badge">👨‍💻 The Team</div>
-                    <h2>Made by a <span>B.Pharm Student</span></h2>
+                    <h2>Meet the <span>Team</span></h2>
                     <p>PharmaAI Hub is built and maintained by a B.Pharm student passionate about combining pharmacy knowledge with AI to make drug information easier to access.</p>
                     <div class="slide-footer">
                         <div class="slide-footer-avatar">AS</div>
@@ -618,6 +653,24 @@
             checkSessionExpiry(); // check immediately on page load
             setInterval(checkSessionExpiry, 5 * 60 * 1000); // and every 5 minutes while the tab is open
 
+            function typeGreeting(el, prefix, name) {
+                if (!el) return;
+                const fullText = `${prefix}, ${name}`;
+                el.classList.add("typing-cursor");
+                el.textContent = "";
+                let i = 0;
+                clearInterval(el._typeInterval);
+                el._typeInterval = setInterval(() => {
+                    i++;
+                    el.textContent = fullText.substring(0, i);
+                    if (i >= fullText.length) {
+                        clearInterval(el._typeInterval);
+                        el.classList.remove("typing-cursor");
+                        el.innerHTML = `${prefix}, <span>${name}</span>`;
+                    }
+                }, 45);
+            }
+
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     // If there's no recorded login time (e.g. session restored from a
@@ -639,7 +692,7 @@
                 } else {
                     if(loginBtn) loginBtn.style.display = "flex";
                     if(userProfile) userProfile.style.display = "none";
-                    if(welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>Guest</span>`;
+                    if(welcomeGreeting) typeGreeting(welcomeGreeting, "Hello", "Guest");
                     
                     setTimeout(() => {
                         const modal = document.getElementById("welcomeModalOverlay");
@@ -655,7 +708,7 @@
                 if(userNameDisplay) userNameDisplay.innerText = firstName; 
                 if(userProfilePic) userProfilePic.src = user.photoURL;
                 const greetingWord = isReturning ? "Welcome back" : "Hello";
-                if(welcomeGreeting) welcomeGreeting.innerHTML = `${greetingWord}, <span>${firstName}</span>`;
+                if(welcomeGreeting) typeGreeting(welcomeGreeting, greetingWord, firstName);
             }
 
             async function saveUserDataToAdmin(user) {
