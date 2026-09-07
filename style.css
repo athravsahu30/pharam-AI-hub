@@ -893,3 +893,55 @@ footer strong { color: var(--ink); }
   .stat-card { padding: 14px; }
   .hero-content h2 { font-size: 24px; }
 }
+
+/* =========================================
+   Gemini-Style Animated Search Glow
+   ========================================= */
+.gemini-search-wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 30px;
+    background: transparent;
+    z-index: 1;
+}
+
+/* Glowing Background */
+.gemini-search-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: -3px; 
+    border-radius: 32px;
+    background: linear-gradient(90deg, #4285f4, #9b72cb, #d96570, #4285f4);
+    background-size: 300% 300%;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease-in-out;
+}
+
+/* Animation on Focus */
+.gemini-search-wrapper:focus-within::before {
+    opacity: 1;
+    animation: geminiGlow 3s ease infinite;
+    filter: blur(4px); 
+}
+
+@keyframes geminiGlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.gemini-search-wrapper input {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    outline: none;
+    border-radius: 30px;
+    background-color: #1e1e2f; 
+    color: #ffffff;
+    font-size: 16px;
+    z-index: 2;
+}
