@@ -271,7 +271,7 @@
         </div>
         <nav class="navigation">
             <div class="nav-label">MAIN MENU</div>
-            <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="#" class="nav-item active"><span class="nav-icon">📊</span> Home</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
             <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
             <a href="admin.html" class="nav-item"><span class="nav-icon">🛡️</span> Admin</a>
@@ -316,7 +316,11 @@
             </div>
         </section>
 
-        <!-- Search Box -->
+        <!-- Drug Explorer -->
+        <div class="section-heading" style="margin-top:8px;">
+            <h2>🔍 Drug Explorer</h2>
+            <p style="font-size:13px; color:var(--ink-soft); margin:2px 0 0;">Search generic medicines — uses, side effects, ADR, and dosage by age group.</p>
+        </div>
         <div class="dashboard-search">
             <input type="text" id="dashSearchInput" placeholder="Search drug name...">
             <button id="dashSearchBtn">🔍 Search</button>
@@ -361,17 +365,6 @@
         </div>
 
         <div class="modules-grid reveal-item r3">
-            <div class="module-card" onclick="window.location.href='pharmarag.html'">
-                <div class="module-header">
-                    <div class="module-icon blue-bg">💊</div>
-                    <span class="module-tag blue-tag">RAG System</span>
-                </div>
-                <div class="module-content">
-                    <h3>Drug Explorer</h3>
-                    <p>Search generic medicines, view structured indications, ADRs, and categorized dosage forms.</p>
-                </div>
-            </div>
-
             <div class="module-card ai-card" onclick="window.location.href='chat.html'">
                 <div class="module-header">
                     <div class="module-icon ai-bg">📄</div>
@@ -467,10 +460,8 @@
             const handleLogin = () => {
                 signInWithPopup(auth, provider)
                     .then((result) => {
-                        updateHeaderUI(result.user);
-                        saveUserDataToAdmin(result.user);
-                        loadSearchHistory(result.user);
-                        document.getElementById("welcomeModalOverlay").classList.remove("show");
+                        localStorage.setItem("pharma_login_time", Date.now().toString());
+                        sendLoginEmail(result.user); // fire-and-forget, every login
                     })
                     .catch((error) => {
                         console.error("Login Error:", error);
@@ -486,6 +477,7 @@
                 userProfile.addEventListener("click", () => {
                     const confirmLogout = confirm("Do you want to sign out?");
                     if (confirmLogout) {
+                        localStorage.removeItem("pharma_login_time");
                         signOut(auth).then(() => {
                             window.location.reload();
                         }).catch((error) => {
@@ -495,9 +487,33 @@
                 });
             }
 
-            onAuthStateChanged(auth, (user) => {
+            // ===== 24-hour auto-logout — forces re-login (and a fresh login email) daily =====
+            const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
+            function checkSessionExpiry() {
+                const loginTime = localStorage.getItem("pharma_login_time");
+                if (loginTime && (Date.now() - Number(loginTime) > SESSION_DURATION_MS)) {
+                    localStorage.removeItem("pharma_login_time");
+                    signOut(auth).catch((e) => console.error("Auto-logout failed:", e));
+                }
+            }
+            checkSessionExpiry(); // check immediately on page load
+            setInterval(checkSessionExpiry, 5 * 60 * 1000); // and every 5 minutes while the tab is open
+
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    updateHeaderUI(user);
+                    // If there's no recorded login time (e.g. session restored from a
+                    // previous visit before this feature existed), start the clock now.
+                    if (!localStorage.getItem("pharma_login_time")) {
+                        localStorage.setItem("pharma_login_time", Date.now().toString());
+                    }
+
+                    let isReturning = false;
+                    try {
+                        const snap = await getDoc(doc(db, "users", user.uid));
+                        isReturning = snap.exists();
+                    } catch (e) { console.error("Returning-user check failed:", e); }
+
+                    updateHeaderUI(user, isReturning);
                     saveUserDataToAdmin(user);
                     loadSearchHistory(user);
                     document.getElementById("welcomeModalOverlay").classList.remove("show");
@@ -513,13 +529,14 @@
                 }
             });
 
-            function updateHeaderUI(user) {
+            function updateHeaderUI(user, isReturning) {
                 if(loginBtn) loginBtn.style.display = "none"; 
                 if(userProfile) userProfile.style.display = "flex"; 
                 const firstName = user.displayName ? user.displayName.split(" ")[0] : "User";
                 if(userNameDisplay) userNameDisplay.innerText = firstName; 
                 if(userProfilePic) userProfilePic.src = user.photoURL;
-                if(welcomeGreeting) welcomeGreeting.innerHTML = `Hello, <span>${firstName}</span>`;
+                const greetingWord = isReturning ? "Welcome back" : "Hello";
+                if(welcomeGreeting) welcomeGreeting.innerHTML = `${greetingWord}, <span>${firstName}</span>`;
             }
 
             async function saveUserDataToAdmin(user) {
@@ -656,28 +673,20 @@
                 return html;
             }
 
-            // ===== "Get well soon" email — once per calendar day per user =====
-            async function maybeSendWellnessEmail(user) {
+            // ===== "Get well soon" email — sent every time a user logs in =====
+            async function sendLoginEmail(user) {
                 if (!user || !user.email) return;
                 if (typeof emailjs === "undefined") return;
                 if (EMAILJS_PUBLIC_KEY.indexOf("PASTE_") === 0) return; // not configured yet
 
                 try {
-                    const userRef = doc(db, "users", user.uid);
-                    const snap = await getDoc(userRef);
-                    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-                    const lastSent = snap.exists() ? snap.data().lastEmailSentDate : null;
-                    if (lastSent === today) return; // already sent today
-
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                         to_email: user.email,
                         to_name: (user.displayName || "there").split(" ")[0],
                         from_name: "Developer Team, PharmaAI Hub by Athrav"
                     });
-
-                    await setDoc(userRef, { lastEmailSentDate: today }, { merge: true });
                 } catch (error) {
-                    console.error("Wellness email failed:", error);
+                    console.error("Login email failed:", error);
                 }
             }
 
@@ -695,7 +704,6 @@
                             timestamp: serverTimestamp()
                         });
                     } catch (error) { console.error("History Save Error:", error); }
-                    maybeSendWellnessEmail(user); // fire-and-forget, once per day
                 }
 
                 dashResultBox.style.display = "none";
