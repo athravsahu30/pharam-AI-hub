@@ -70,7 +70,6 @@
 
         #previewContainer { display: none; margin-top: 20px; position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border-strong); }
         #imagePreview { width: 100%; display: block; border-radius: 12px; }
-        #compressionNote { display: none; font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; }
 
         .scan-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
         .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
@@ -101,6 +100,7 @@
         .scan-alert-icon { font-size: 16px; flex-shrink: 0; line-height: 1.6; }
 
         #resultBox { display: none; margin-top: 25px; text-align: left; }
+        .foil-warning-note { font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; margin-bottom: 0; text-align: left; }
         .result-title { color: var(--ink); font-size: 19px; font-family: 'Space Grotesk', sans-serif; margin: 0 0 16px; }
         .result-section { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-left: 4px solid var(--blue); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; line-height: 1.7; font-size: 14.5px; }
         .result-section h3 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
@@ -192,7 +192,7 @@
             <div id="previewContainer">
                 <img id="imagePreview" src="" alt="Medicine Preview">
             </div>
-            <p id="compressionNote"></p>
+            <p id="foilWarningNote" class="foil-warning-note">⚠️ Note: Accuracy may be lower for silver foil medicines due to camera reflection.</p>
 
             <button id="scanBtn" class="scan-btn">🔍 Identify Medicine</button>
 
@@ -255,7 +255,6 @@
             const imageInput = document.getElementById("imageInput");
             const imagePreview = document.getElementById("imagePreview");
             const previewContainer = document.getElementById("previewContainer");
-            const compressionNote = document.getElementById("compressionNote");
             const scanBtn = document.getElementById("scanBtn");
             const uploadArea = document.getElementById("uploadArea");
             const loader = document.getElementById("loader");
@@ -407,7 +406,11 @@
             // any failed/aborted scan). Only its label/icon and click
             // behavior change; no separate button is added.
             // ---------------------------------------------------------
-            const SCAN_BTN_LABEL = { identify: "🔍 Identify Medicine", retake: "📷 Retake Photo" };
+            const SCAN_BTN_LABEL = {
+                identify: "🔍 Identify Medicine",
+                retake: "📷 Retake Photo",
+                scanAnother: "🔄 Scan Another Medicine"
+            };
             let scanBtnMode = "identify";
 
             function setScanBtnMode(mode) {
@@ -554,11 +557,10 @@
 
                 resultBox.style.display = "none";
                 scanBtn.style.display = "none";
-                compressionNote.style.display = "none";
                 hideAlert();
 
                 try {
-                    const { blob, sourceCanvas, dataUrl, originalKB, compressedKB } = await compressImage(file);
+                    const { blob, sourceCanvas, dataUrl } = await compressImage(file);
                     compressedBlob = blob;
                     ocrReadyCanvas = preprocessForOCR(sourceCanvas);
 
@@ -567,9 +569,6 @@
                     uploadArea.style.display = "none";
                     scanBtn.style.display = "flex";
                     setScanBtnMode("identify"); // fresh photo — always starts as "Identify Medicine"
-
-                    compressionNote.textContent = `📉 Optimized for scanning: ${originalKB}KB → ${compressedKB}KB`;
-                    compressionNote.style.display = "block";
                 } catch (err) {
                     console.error("Compression error:", err);
                     resultBox.innerHTML = `<span class="error-text">❌ Could not process this image.</span> Please try a different photo.`;
@@ -699,30 +698,54 @@
             }
 
             // ---------------------------------------------------------
-            // RETRY ACTION — fires when the button is in "retake" mode.
-            // Re-opens the camera/file picker immediately, clears the
-            // failed image and all scan state, and hides the alert.
+            // SHARED RESET — clears every trace of the previous scan
+            // (image, blob, canvas, result, alert, file input value) and
+            // puts the UI back in its initial "waiting for a photo" state.
+            // Used by both "Retake Photo" (failure path) and "Scan
+            // Another Medicine" (success path) — they only differ in
+            // whether the camera reopens automatically afterward.
             // ---------------------------------------------------------
-            function handleRetake() {
+            function resetScannerUI({ reopenCamera = false } = {}) {
                 compressedBlob = null;
                 ocrReadyCanvas = null;
 
                 imagePreview.src = "";
                 previewContainer.style.display = "none";
-                compressionNote.style.display = "none";
                 uploadArea.style.display = "block";
                 scanBtn.style.display = "none";
+
+                resultBox.innerHTML = "";
                 resultBox.style.display = "none";
+
                 hideAlert();
 
                 // Reset the input so choosing the same photo again still fires "change"
                 imageInput.value = "";
-                imageInput.click(); // re-trigger camera/file picker (capture="environment")
+                setScanBtnMode("identify");
+
+                if (reopenCamera) imageInput.click();
+            }
+
+            // RETRY ACTION — fires when the button is in "retake" mode
+            // (a failed/aborted scan). Re-opens the camera immediately.
+            function handleRetake() {
+                resetScannerUI({ reopenCamera: true });
+            }
+
+            // SCAN ANOTHER — fires when the button is in "scanAnother" mode
+            // (a successful scan). Clears the result and preview but lets
+            // the user re-open the upload area/camera on their own terms.
+            function handleScanAnother() {
+                resetScannerUI({ reopenCamera: false });
             }
 
             scanBtn.addEventListener("click", async function () {
                 if (scanBtnMode === "retake") {
                     handleRetake();
+                    return;
+                }
+                if (scanBtnMode === "scanAnother") {
+                    handleScanAnother();
                     return;
                 }
 
@@ -767,6 +790,7 @@
                     if (info) {
                         resultBox.innerHTML = renderStrict3(info);
                         resultBox.style.display = "block";
+                        setScanBtnMode("scanAnother"); // successful result on screen — offer a clean reset, not another "Identify"
                     } else {
                         // Text was read (confidently, or via a dictionary hit), but
                         // nothing resolved to an actual database entry. Still not
