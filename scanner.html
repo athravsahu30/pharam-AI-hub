@@ -276,6 +276,20 @@
             let compressedBlob = null; // output of step 1 (compression)
             let ocrReadyCanvas = null; // output of step 2 (preprocessing) — what Tesseract actually reads
 
+            // ---------------------------------------------------------
+            // SCAN BUTTON STATE — the same physical button doubles as
+            // "Identify Medicine" (normal) and "Retake Photo" (after
+            // any failed/aborted scan). Only its label/icon and click
+            // behavior change; no separate button is added.
+            // ---------------------------------------------------------
+            const SCAN_BTN_LABEL = { identify: "🔍 Identify Medicine", retake: "📷 Retake Photo" };
+            let scanBtnMode = "identify";
+
+            function setScanBtnMode(mode) {
+                scanBtnMode = mode;
+                scanBtn.textContent = SCAN_BTN_LABEL[mode];
+            }
+
             function showAlert(message) {
                 scanAlertText.textContent = message;
                 scanAlert.classList.add("show");
@@ -408,6 +422,7 @@
                     previewContainer.style.display = "block";
                     uploadArea.style.display = "none";
                     scanBtn.style.display = "flex";
+                    setScanBtnMode("identify"); // fresh photo — always starts as "Identify Medicine"
 
                     compressionNote.textContent = `📉 Optimized for scanning: ${originalKB}KB → ${compressedKB}KB`;
                     compressionNote.style.display = "block";
@@ -540,7 +555,34 @@
                 `;
             }
 
+            // ---------------------------------------------------------
+            // RETRY ACTION — fires when the button is in "retake" mode.
+            // Re-opens the camera/file picker immediately, clears the
+            // failed image and all scan state, and hides the alert.
+            // ---------------------------------------------------------
+            function handleRetake() {
+                compressedBlob = null;
+                ocrReadyCanvas = null;
+
+                imagePreview.src = "";
+                previewContainer.style.display = "none";
+                compressionNote.style.display = "none";
+                uploadArea.style.display = "block";
+                scanBtn.style.display = "none";
+                resultBox.style.display = "none";
+                hideAlert();
+
+                // Reset the input so choosing the same photo again still fires "change"
+                imageInput.value = "";
+                imageInput.click(); // re-trigger camera/file picker (capture="environment")
+            }
+
             scanBtn.addEventListener("click", async function () {
+                if (scanBtnMode === "retake") {
+                    handleRetake();
+                    return;
+                }
+
                 if (!ocrReadyCanvas) return;
 
                 scanBtn.style.display = "none";
@@ -561,6 +603,7 @@
                         scanBtn.style.display = "flex";
                         console.warn(`OCR confidence ${Math.round(ocr.confidence)}% — below ${OCR_CONFIDENCE_THRESHOLD}% threshold, aborting.`);
                         showAlert(LOW_CONFIDENCE_MESSAGE);
+                        setScanBtnMode("retake");
                         return;
                     }
 
@@ -580,6 +623,7 @@
                         // honest message — but still the alert box, never a
                         // fabricated Uses/Doses/Side-Effects result.
                         showAlert("Text was readable, but it didn't match any known medicine in the database. Try a clearer photo of the name, or search for it manually in Drug Explorer.");
+                        setScanBtnMode("retake");
                     }
 
                 } catch (error) {
@@ -588,6 +632,7 @@
                     scanBtn.style.display = "flex";
                     resultBox.innerHTML = `<span class="error-text">❌ Something went wrong while scanning.</span> Please try again.`;
                     resultBox.style.display = "block";
+                    setScanBtnMode("retake");
                 }
             });
         });
