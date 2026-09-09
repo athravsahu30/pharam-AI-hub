@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PharmaAI Hub - Medicine Scanner</title>
+    <!-- Premium Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Free, key-free drug data fetcher (openFDA / RxNorm / MedlinePlus etc.) — same one Drug Explorer uses -->
+    <script src="pharma-data.js?v=3"></script>
+
+    <style>
+        :root {
+          --bg: #04060C; --bg-panel: #0A0D16;
+          --card: rgba(255,255,255,0.035); --card-border: rgba(88,140,255,0.20); --card-border-strong: rgba(88,140,255,0.45);
+          --blue: #4C8DFF; --blue-bright: #7AB0FF; --cyan: #22D3EE;
+          --ink: #EAF0FB; --ink-soft: #8C97B3; --red: #FF6B6B; --green: #34D399; --purple: #A78BFA;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; display: flex; min-height: 100vh; background: radial-gradient(ellipse 900px 500px at 15% -10%, rgba(76,141,255,0.16), transparent 60%), radial-gradient(ellipse 700px 500px at 100% 10%, rgba(34,211,238,0.08), transparent 55%), var(--bg); color: var(--ink); overflow-x: hidden; width: 100%; }
+        a { text-decoration: none; color: inherit; }
+        button { font-family: inherit; cursor: pointer; border: none; background: none; outline: none; }
+        h1, h2, h3 { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+
+        /* ===================== SIDEBAR (Match Dashboard) ===================== */
+        .sidebar { width: 250px; flex-shrink: 0; display: flex; flex-direction: column; padding: 20px; background: var(--bg-panel); border-right: 1px solid var(--card-border); z-index: 10000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; }
+        @media (min-width: 901px) { .sidebar.collapsed { width: 0; padding-left: 0; padding-right: 0; border: none; opacity: 0; } }
+        .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 30px; min-width: 200px;}
+        .brand h2 { color: var(--ink); font-size: 18px; margin: 0; }
+        .brand span { color: var(--blue-bright); font-size: 10px; letter-spacing: 0.08em; display: block; }
+        .brand-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; border-radius: 10px; font-weight: 700; flex-shrink: 0;}
+        .navigation { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 200px; }
+        .nav-label { font-size: 11px; margin: 10px 0 5px; color: var(--ink-soft); letter-spacing: 0.06em; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 12px 15px; border-radius: 8px; color: var(--ink-soft); font-size: 14px; transition: 0.2s; white-space: nowrap; font-weight: 500;}
+        .nav-icon { width: 18px; text-align: center; }
+        .nav-item:hover { background: rgba(76,141,255,0.10); color: var(--ink); }
+        .nav-item.active { background: rgba(76,141,255,0.16); color: var(--blue-bright); border: 1px solid var(--card-border-strong); }
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.show { display: block; opacity: 1; }
+
+        /* ===================== MAIN CONTENT & TOPBAR ===================== */
+        .main-content { flex: 1; padding: 25px 35px; overflow-y: auto; width: 100%; min-width: 0; transition: width 0.3s; display: flex; flex-direction: column;}
+        .topbar { display: flex; align-items: center; margin-bottom: 30px; gap: 15px; width: 100%; }
+        .breadcrumb { font-size: 12px; margin-bottom: 4px; color: var(--ink-soft); }
+        .topbar h1 { color: var(--ink); font-size: 22px; margin: 0; }
+        .top-actions { display: flex; align-items: center; gap: 16px; margin-left: auto; }
+        .menu-toggle { display: flex; color: var(--ink); font-size: 20px; background: var(--card); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: 8px; align-items: center; justify-content: center; transition: 0.2s; }
+        .menu-toggle:hover { background: rgba(76,141,255,0.15); border-color: var(--card-border-strong); }
+
+        .profile { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--card-border); padding: 5px 15px 5px 5px; border-radius: 30px; }
+        .profile-info { display: flex; flex-direction: column; line-height: 1.2; }
+        .profile-info strong { color: var(--ink); font-size: 13px; }
+        .profile-info span { font-size: 11px; color: var(--ink-soft); }
+        .profile-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; font-weight: 700; font-size: 13px; }
+        .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; transition: 0.2s; cursor: pointer; box-shadow: 0 4px 15px rgba(34,211,238,0.15); white-space: nowrap; }
+        .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+
+        /* ===================== SCANNER UI ===================== */
+        .scanner-container { background: var(--card); border: 1px solid var(--card-border); padding: 35px; border-radius: 16px; width: 100%; max-width: 700px; margin: 0 auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .scanner-header { margin-bottom: 25px; }
+        .scanner-header h2 { font-size: 24px; color: var(--ink); margin-bottom: 8px; }
+        .scanner-header p { font-size: 14px; color: var(--ink-soft); }
+
+        .upload-area { border: 2px dashed var(--card-border-strong); border-radius: 12px; padding: 40px 20px; background: rgba(0,0,0,0.2); cursor: pointer; transition: 0.3s; position: relative; }
+        .upload-area:hover { border-color: var(--cyan); background: rgba(76,141,255,0.05); }
+        .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .upload-icon { font-size: 40px; margin-bottom: 10px; display: block; }
+
+        #previewContainer { display: none; margin-top: 20px; position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--card-border-strong); }
+        #imagePreview { width: 100%; display: block; border-radius: 12px; }
+        #compressionNote { display: none; font-size: 11.5px; color: var(--ink-soft); margin-top: 8px; }
+
+        .scan-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 15px 30px; border-radius: 12px; font-weight: 700; font-size: 16px; transition: 0.2s; display: none; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; cursor: pointer; }
+        .scan-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
+
+        /* Loader */
+        .loader { display: none; margin-top: 25px; }
+        .skeleton-line { height: 18px; border-radius: 6px; margin-bottom: 12px; background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.15) 37%, rgba(255,255,255,0.05) 63%); background-size: 400px 100%; animation: shimmer 1.4s ease-in-out infinite; }
+        .skeleton-line.title { height: 25px; width: 50%; margin-bottom: 20px; }
+        @keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
+
+        /* Result — strict 3-point layout (Uses / Doses / Side Effects ONLY) */
+        #resultBox { display: none; margin-top: 25px; text-align: left; }
+        .result-title { color: var(--ink); font-size: 19px; font-family: 'Space Grotesk', sans-serif; margin: 0 0 16px; }
+        .result-section { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-left: 4px solid var(--blue); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; line-height: 1.7; font-size: 14.5px; }
+        .result-section h3 { margin: 0 0 8px; font-size: 15px; color: var(--ink); }
+        .result-section p { margin: 0; color: var(--ink); }
+        .sec-blue { border-left-color: var(--blue); }
+        .sec-green { border-left-color: var(--green); }
+        .sec-orange { border-left-color: #FBBF24; }
+        .error-text { color: var(--red); font-weight: bold; }
+        .rescan-btn { display: inline-block; margin-top: 6px; font-size: 12.5px; color: var(--blue-bright); text-decoration: underline; cursor: pointer; }
+
+        @media (max-width: 900px) {
+            .sidebar { position: fixed; left: -280px; top: 0; bottom: 0; height: 100vh; width: 260px; box-shadow: 10px 0 30px rgba(0,0,0,0.7); z-index: 10001;}
+            .sidebar.open { left: 0; }
+            .main-content { padding: 15px; width: 100vw; overflow-x: hidden;}
+            .topbar { flex-wrap: wrap; gap: 10px; margin-bottom: 20px;}
+            .breadcrumb { display: none; }
+            .profile-info { display: none; }
+            .scanner-container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">⚕️</div>
+            <div>
+                <h2>PharmaAI</h2>
+                <span>HUB</span>
+            </div>
+        </div>
+        <nav class="navigation">
+            <div class="nav-label">MAIN MENU</div>
+            <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Home</a>
+            <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
+            <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
+            <a href="#" class="nav-item active"><span class="nav-icon">📷</span> Medicine Scanner</a>
+            <a href="admin.html" class="nav-item" id="adminNavLink" style="display:none;"><span class="nav-icon">🛡️</span> Admin</a>
+        </nav>
+    </aside>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-content">
+
+        <!-- Header -->
+        <header class="topbar">
+            <button class="menu-toggle" id="menuBtn">☰</button>
+            <div style="margin-left: 10px;">
+                <a href="index.html" style="display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--blue-bright); margin-bottom:4px;">← Back to Dashboard</a>
+                <div class="breadcrumb">Modules / Medicine Scanner</div>
+                <h1>Medicine Scanner</h1>
+            </div>
+            <div class="top-actions">
+                <button id="googleLoginBtn" class="login-btn">
+                    <img src="https://www.google.com/favicon.ico" width="16" alt="G"> Sign in
+                </button>
+                <div id="userProfile" class="profile" style="display: none;">
+                    <img id="userProfilePic" src="" alt="User" class="profile-avatar">
+                    <div class="profile-info">
+                        <strong id="userNameDisplay">Name</strong>
+                        <span>Authenticated</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Scanner UI -->
+        <div class="scanner-container">
+            <div class="scanner-header">
+                <h2>📷 Medicine Scanner</h2>
+                <p>Upload or capture a photo of any medicine strip, box, or bottle — branded or generic. Shows only Uses, Doses &amp; Side Effects.</p>
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <span class="upload-icon">📷</span>
+                <strong>Click to Upload or Capture Photo</strong>
+                <p style="font-size: 12px; margin-top: 5px; color: var(--ink-soft);">Make sure the printed medicine name is visible &amp; well-lit</p>
+                <input type="file" id="imageInput" accept="image/*" capture="environment">
+            </div>
+
+            <div id="previewContainer">
+                <img id="imagePreview" src="" alt="Medicine Preview">
+            </div>
+            <p id="compressionNote"></p>
+
+            <button id="scanBtn" class="scan-btn">🔍 Identify Medicine</button>
+
+            <!-- Loading Shimmer -->
+            <div class="loader" id="loader">
+                <div class="skeleton-line title"></div>
+                <p id="scanProgress" style="font-size:13px; color:var(--cyan); margin-bottom:12px;">Preparing image…</p>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line" style="width: 70%;"></div>
+            </div>
+
+            <!-- Result Box: strictly 3 sections, nothing else -->
+            <div id="resultBox"></div>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: SIDEBAR TOGGLE                 -->
+    <!-- ========================================== -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const menuBtn = document.getElementById("menuBtn");
+            const sidebar = document.getElementById("sidebar");
+            const sidebarOverlay = document.getElementById("sidebarOverlay");
+
+            if (menuBtn && sidebar) {
+                menuBtn.addEventListener("click", () => {
+                    if (window.innerWidth > 900) {
+                        sidebar.classList.toggle("collapsed");
+                    } else {
+                        sidebar.classList.add("open");
+                        if (sidebarOverlay) sidebarOverlay.classList.add("show");
+                    }
+                });
+            }
+
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener("click", () => {
+                    sidebar.classList.remove("open");
+                    sidebarOverlay.classList.remove("show");
+                });
+            }
+        });
+    </script>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: MEDICINE SCANNER LOGIC          -->
+    <!-- Pipeline: compress (Canvas) -> OCR          -->
+    <!-- (Tesseract.js, free/on-device) -> lookup     -->
+    <!-- (PharmaData / openFDA+RxNorm, same free API  -->
+    <!-- the Drug Explorer already uses) -> render     -->
+    <!-- ONLY Uses / Doses / Side Effects.             -->
+    <!-- No new API key. No generative AI involved —   -->
+    <!-- the strict 3-point limit is enforced by code, -->
+    <!-- not by a prompt, so it can never drift.        -->
+    <!-- ========================================== -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const imageInput = document.getElementById("imageInput");
+            const imagePreview = document.getElementById("imagePreview");
+            const previewContainer = document.getElementById("previewContainer");
+            const compressionNote = document.getElementById("compressionNote");
+            const scanBtn = document.getElementById("scanBtn");
+            const uploadArea = document.getElementById("uploadArea");
+            const loader = document.getElementById("loader");
+            const scanProgress = document.getElementById("scanProgress");
+            const resultBox = document.getElementById("resultBox");
+
+            let compressedBlob = null; // what actually gets OCR'd — the compressed version, never the raw upload
+
+            // ---------------------------------------------------------
+            // 1. IMAGE COMPRESSION (Canvas) — CRITICAL step.
+            //    Downscales to a max 1000px edge and re-encodes as
+            //    JPEG @ 70% quality. Runs entirely client-side before
+            //    anything else happens, so large phone-camera photos
+            //    (often 8-12MB) never hit OCR at full size, keeping
+            //    the scan fast and preventing memory/processing
+            //    failures on lower-end devices.
+            // ---------------------------------------------------------
+            function compressImage(file, maxDimension = 1000, quality = 0.7) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onerror = () => reject(new Error("Could not read file"));
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onerror = () => reject(new Error("Could not decode image"));
+                        img.onload = () => {
+                            let { width, height } = img;
+
+                            if (width > maxDimension || height > maxDimension) {
+                                if (width >= height) {
+                                    height = Math.round(height * (maxDimension / width));
+                                    width = maxDimension;
+                                } else {
+                                    width = Math.round(width * (maxDimension / height));
+                                    height = maxDimension;
+                                }
+                            }
+
+                            const canvas = document.createElement("canvas");
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext("2d");
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            canvas.toBlob((blob) => {
+                                if (!blob) { reject(new Error("Compression failed")); return; }
+                                resolve({
+                                    blob,
+                                    dataUrl: canvas.toDataURL("image/jpeg", quality),
+                                    width, height,
+                                    originalKB: Math.round(file.size / 1024),
+                                    compressedKB: Math.round(blob.size / 1024)
+                                });
+                            }, "image/jpeg", quality);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+
+            imageInput.addEventListener("change", async function (e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                resultBox.style.display = "none";
+                scanBtn.style.display = "none";
+                compressionNote.style.display = "none";
+
+                try {
+                    const { blob, dataUrl, originalKB, compressedKB } = await compressImage(file);
+                    compressedBlob = blob;
+
+                    imagePreview.src = dataUrl;
+                    previewContainer.style.display = "block";
+                    uploadArea.style.display = "none";
+                    scanBtn.style.display = "flex";
+
+                    compressionNote.textContent = `📉 Optimized for scanning: ${originalKB}KB → ${compressedKB}KB`;
+                    compressionNote.style.display = "block";
+                } catch (err) {
+                    console.error("Compression error:", err);
+                    resultBox.innerHTML = `<span class="error-text">❌ Could not process this image.</span> Please try a different photo.`;
+                    resultBox.style.display = "block";
+                }
+            });
+
+            // ---------------------------------------------------------
+            // 2. OCR — Tesseract.js (free, on-device, no API key,
+            //    same engine already used by the AI Prescription
+            //    reader). Runs on the COMPRESSED image, not the
+            //    original upload.
+            // ---------------------------------------------------------
+            async function runOCR(blob) {
+                const result = await Tesseract.recognize(blob, "eng+hin", {
+                    logger: (m) => {
+                        if (m.status === "recognizing text") {
+                            scanProgress.textContent = "Reading text… " + Math.round(m.progress * 100) + "%";
+                        } else if (m.status === "loading language traineddata") {
+                            scanProgress.textContent = "Loading OCR models…";
+                        }
+                    }
+                });
+                return (result.data.text || "").trim();
+            }
+
+            // ---------------------------------------------------------
+            // 3. CANDIDATE EXTRACTION — turns raw OCR text into a
+            //    ranked list of possible medicine names to look up.
+            //    Full lines first (a medicine name is usually the
+            //    biggest single line on a strip/box), then individual
+            //    words as a fallback for noisy OCR.
+            // ---------------------------------------------------------
+            function extractCandidates(ocrText) {
+                const lines = ocrText
+                    .split(/\n+/)
+                    .map((l) => l.trim())
+                    .filter((l) => l.length >= 3 && /[a-zA-Z]/.test(l) && !/^\d+$/.test(l));
+
+                const words = ocrText
+                    .split(/\s+/)
+                    .map((w) => w.trim())
+                    .filter((w) => w.length >= 4 && /^[A-Za-z]+$/.test(w));
+
+                const uniqueLines = [...new Set(lines)].slice(0, 6);
+                const uniqueWords = [...new Set(words)]
+                    .sort((a, b) => b.length - a.length)
+                    .slice(0, 8);
+
+                return [...uniqueLines, ...uniqueWords];
+            }
+
+            // ---------------------------------------------------------
+            // 4. API HANDLING — reuses the EXACT same free, key-free
+            //    data source as Drug Explorer: PharmaData.fetchDrugInfo()
+            //    in pharma-data.js, which itself calls openFDA + RxNorm
+            //    + MedlinePlus. No new API, no new key, nothing added
+            //    to the project's config. Tries each OCR candidate in
+            //    turn until one resolves to a real medicine.
+            // ---------------------------------------------------------
+            async function findMedicineFromOCR(ocrText) {
+                const candidates = extractCandidates(ocrText);
+                for (const candidate of candidates) {
+                    scanProgress.textContent = `Checking "${candidate}"…`;
+                    const info = await PharmaData.fetchDrugInfo(candidate);
+                    if (info) return info;
+                }
+                return null;
+            }
+
+            function splitSentences(text, maxChars) {
+                if (!text) return "";
+                if (text.length <= maxChars) return text;
+                const cut = text.substring(0, maxChars);
+                const lastPeriod = cut.lastIndexOf(". ");
+                return (lastPeriod > 100 ? cut.substring(0, lastPeriod + 1) : cut) + " …";
+            }
+
+            // ---------------------------------------------------------
+            // 5. STRICT OUTPUT — renders ONLY Uses, Doses, Side
+            //    Effects. No warnings, interactions, chemistry,
+            //    manufacturer, or source links. This is enforced by
+            //    code (this function only ever builds 3 blocks), so
+            //    there's no "AI prompt" that could be ignored or drift
+            //    over time — the output shape is guaranteed.
+            // ---------------------------------------------------------
+            function renderStrict3(info) {
+                const f = info.fda || {};
+                const extras = info.extras || {};
+
+                const uses = f.indications_and_usage
+                    ? splitSentences(f.indications_and_usage[0], 300)
+                    : (info.medline && info.medline.length
+                        ? "Not listed in FDA label — see Drug Explorer for MedlinePlus info on this medicine."
+                        : "Not available for this medicine.");
+
+                const doses = f.dosage_and_administration
+                    ? splitSentences(f.dosage_and_administration[0], 250)
+                    : "Not listed — follow the package label or consult a pharmacist.";
+
+                let sideEffects;
+                if (f.adverse_reactions) {
+                    sideEffects = splitSentences(f.adverse_reactions[0], 250);
+                } else if (extras.topReactions && extras.topReactions.length) {
+                    sideEffects = extras.topReactions.slice(0, 5).map((r) => r.term.toLowerCase()).join(", ");
+                } else {
+                    sideEffects = "Not available for this medicine.";
+                }
+
+                return `
+                    <h2 class="result-title">✅ ${info.name.toUpperCase()}</h2>
+                    <div class="result-section sec-blue"><h3>💊 Uses</h3><p>${uses}</p></div>
+                    <div class="result-section sec-green"><h3>📋 Doses</h3><p>${doses}</p></div>
+                    <div class="result-section sec-orange"><h3>⚠️ Side Effects</h3><p>${sideEffects}</p></div>
+                `;
+            }
+
+            scanBtn.addEventListener("click", async function () {
+                if (!compressedBlob) return;
+
+                scanBtn.style.display = "none";
+                loader.style.display = "block";
+                resultBox.style.display = "none";
+                scanProgress.textContent = "Reading text…";
+
+                try {
+                    const ocrText = await runOCR(compressedBlob);
+
+                    if (!ocrText) {
+                        loader.style.display = "none";
+                        scanBtn.style.display = "flex";
+                        resultBox.innerHTML = `<span class="error-text">⚠️ No readable text found.</span> Try a sharper, well-lit photo with the medicine name clearly visible.`;
+                        resultBox.style.display = "block";
+                        return;
+                    }
+
+                    scanProgress.textContent = "Looking up medicine data…";
+                    const info = await findMedicineFromOCR(ocrText);
+
+                    loader.style.display = "none";
+                    scanBtn.style.display = "flex";
+
+                    if (info) {
+                        resultBox.innerHTML = renderStrict3(info);
+                    } else {
+                        resultBox.innerHTML = `
+                            <span class="error-text">⚠️ Could not identify this medicine.</span>
+                            The text found doesn't match a known medicine name.<br>
+                            <a class="rescan-btn" href="pharmarag.html">Try searching it manually in Drug Explorer →</a>`;
+                    }
+                    resultBox.style.display = "block";
+
+                } catch (error) {
+                    console.error("Scan error:", error);
+                    loader.style.display = "none";
+                    scanBtn.style.display = "flex";
+                    resultBox.innerHTML = `<span class="error-text">❌ Something went wrong while scanning.</span> Please try again.`;
+                    resultBox.style.display = "block";
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT: FIREBASE AUTH                  -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAvvCVFdsrIfHOwY9qxg062FtUE34ts_IA",
+            authDomain: "pharmaai-hub-142f1.firebaseapp.com",
+            projectId: "pharmaai-hub-142f1",
+            storageBucket: "pharmaai-hub-142f1.firebasestorage.app",
+            messagingSenderId: "665986034172",
+            appId: "1:665986034172:web:6752ed83566cd6d015ea79"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+        function toggleAdminNav(user) {
+            const adminNavLink = document.getElementById("adminNavLink");
+            if (!adminNavLink) return;
+            adminNavLink.style.display = (user && ADMIN_EMAILS.includes(user.email)) ? "flex" : "none";
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const loginBtn = document.getElementById("googleLoginBtn");
+            const userProfile = document.getElementById("userProfile");
+            const userNameDisplay = document.getElementById("userNameDisplay");
+            const userProfilePic = document.getElementById("userProfilePic");
+
+            if (loginBtn) {
+                loginBtn.addEventListener("click", () => {
+                    signInWithPopup(auth, provider).catch((err) => console.error("Login Error:", err));
+                });
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                toggleAdminNav(user);
+                if (user) {
+                    if (loginBtn) loginBtn.style.display = "none";
+                    if (userProfile) userProfile.style.display = "flex";
+                    if (userNameDisplay) userNameDisplay.innerText = user.displayName.split(" ")[0];
+                    if (userProfilePic) userProfilePic.src = user.photoURL;
+                } else {
+                    if (loginBtn) loginBtn.style.display = "flex";
+                    if (userProfile) userProfile.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
