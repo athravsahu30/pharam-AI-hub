@@ -82,6 +82,24 @@
         @keyframes shimmer { 0% { background-position: -300px 0; } 100% { background-position: 300px 0; } }
 
         /* Result — strict 3-point layout (Uses / Doses / Side Effects ONLY) */
+        /* Low-confidence scan alert — red/warning inline bar, never a popup */
+        .scan-alert {
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(255,107,107,0.12);
+            border: 1px solid rgba(255,107,107,0.45);
+            color: #FFD3D3;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .scan-alert.show { display: flex; }
+        .scan-alert-icon { font-size: 16px; flex-shrink: 0; line-height: 1.6; }
+
         #resultBox { display: none; margin-top: 25px; text-align: left; }
         .result-title { color: var(--ink); font-size: 19px; font-family: 'Space Grotesk', sans-serif; margin: 0 0 16px; }
         .result-section { background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); border-left: 4px solid var(--blue); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; line-height: 1.7; font-size: 14.5px; }
@@ -156,6 +174,12 @@
             <div class="scanner-header">
                 <h2>📷 Medicine Scanner</h2>
                 <p>Upload or capture a photo of any medicine strip, box, or bottle — branded or generic. Shows only Uses, Doses &amp; Side Effects.</p>
+            </div>
+
+            <!-- Low-confidence / unreadable-scan alert — inline bar, never a popup -->
+            <div id="scanAlert" class="scan-alert" role="alert">
+                <span class="scan-alert-icon">⚠️</span>
+                <span id="scanAlertText"></span>
             </div>
 
             <div class="upload-area" id="uploadArea">
@@ -237,8 +261,29 @@
             const loader = document.getElementById("loader");
             const scanProgress = document.getElementById("scanProgress");
             const resultBox = document.getElementById("resultBox");
+            const scanAlert = document.getElementById("scanAlert");
+            const scanAlertText = document.getElementById("scanAlertText");
 
-            let compressedBlob = null; // what actually gets OCR'd — the compressed version, never the raw upload
+            // ---------------------------------------------------------
+            // ZERO-HALLUCINATION CONFIG
+            // Below this OCR confidence score, the scan is aborted —
+            // no lookup is attempted, no name is guessed. Raise to 90
+            // for an even stricter gate.
+            // ---------------------------------------------------------
+            const OCR_CONFIDENCE_THRESHOLD = 85;
+            const LOW_CONFIDENCE_MESSAGE = "Medicine name not clear. Please capture the photo again. Ensure there is proper lighting, the image is not blurry, and the camera is steady.";
+
+            let compressedBlob = null; // output of step 1 (compression)
+            let ocrReadyCanvas = null; // output of step 2 (preprocessing) — what Tesseract actually reads
+
+            function showAlert(message) {
+                scanAlertText.textContent = message;
+                scanAlert.classList.add("show");
+            }
+            function hideAlert() {
+                scanAlert.classList.remove("show");
+                scanAlertText.textContent = "";
+            }
 
             // ---------------------------------------------------------
             // 1. IMAGE COMPRESSION (Canvas) — CRITICAL step.
@@ -279,6 +324,7 @@
                                 if (!blob) { reject(new Error("Compression failed")); return; }
                                 resolve({
                                     blob,
+                                    sourceCanvas: canvas,
                                     dataUrl: canvas.toDataURL("image/jpeg", quality),
                                     width, height,
                                     originalKB: Math.round(file.size / 1024),
@@ -292,6 +338,58 @@
                 });
             }
 
+            // ---------------------------------------------------------
+            // 2. OCR PRE-PROCESSING (Canvas) — CRITICAL for accuracy.
+            //    Blister packs glare, syrup bottles are curved, and
+            //    printed fonts are tiny — feeding the raw photo to OCR
+            //    guarantees misreads. Three steps, in order:
+            //      a) Upsampling  — scale ~1.6x so small print crosses
+            //                       the ~20-30px tall "sweet spot" OCR
+            //                       engines read best.
+            //      b) Grayscale   — drop color noise, keep only light
+            //                       intensity.
+            //      c) Binarization — force every pixel to pure black or
+            //                       pure white, wiping out glare/shadow
+            //                       so only crisp text remains.
+            // ---------------------------------------------------------
+            function preprocessForOCR(sourceCanvas, scaleFactor = 1.6) {
+                const upCanvas = document.createElement("canvas");
+                upCanvas.width = Math.round(sourceCanvas.width * scaleFactor);
+                upCanvas.height = Math.round(sourceCanvas.height * scaleFactor);
+
+                const upCtx = upCanvas.getContext("2d");
+                upCtx.imageSmoothingEnabled = true;
+                upCtx.imageSmoothingQuality = "high";
+                // (a) Upsampling
+                upCtx.drawImage(sourceCanvas, 0, 0, upCanvas.width, upCanvas.height);
+
+                const imgData = upCtx.getImageData(0, 0, upCanvas.width, upCanvas.height);
+                const data = imgData.data;
+
+                // (b) Grayscale — luminosity-weighted so it matches perceived brightness
+                for (let i = 0; i < data.length; i += 4) {
+                    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                    data[i] = data[i + 1] = data[i + 2] = gray;
+                }
+
+                // (c) Binarization — global threshold set from the image's own
+                //     mean brightness, biased slightly dark so glare (very
+                //     bright pixels) reliably lands on the white side and
+                //     printed strokes reliably land on the black side.
+                let sum = 0;
+                for (let i = 0; i < data.length; i += 4) sum += data[i];
+                const mean = sum / (data.length / 4);
+                const threshold = mean * 0.9;
+
+                for (let i = 0; i < data.length; i += 4) {
+                    const v = data[i] > threshold ? 255 : 0;
+                    data[i] = data[i + 1] = data[i + 2] = v;
+                }
+
+                upCtx.putImageData(imgData, 0, 0);
+                return upCanvas;
+            }
+
             imageInput.addEventListener("change", async function (e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -299,10 +397,12 @@
                 resultBox.style.display = "none";
                 scanBtn.style.display = "none";
                 compressionNote.style.display = "none";
+                hideAlert();
 
                 try {
-                    const { blob, dataUrl, originalKB, compressedKB } = await compressImage(file);
+                    const { blob, sourceCanvas, dataUrl, originalKB, compressedKB } = await compressImage(file);
                     compressedBlob = blob;
+                    ocrReadyCanvas = preprocessForOCR(sourceCanvas);
 
                     imagePreview.src = dataUrl;
                     previewContainer.style.display = "block";
@@ -319,13 +419,16 @@
             });
 
             // ---------------------------------------------------------
-            // 2. OCR — Tesseract.js (free, on-device, no API key,
-            //    same engine already used by the AI Prescription
-            //    reader). Runs on the COMPRESSED image, not the
-            //    original upload.
+            // 3. OCR + STRICT CONFIDENCE GATE — Tesseract.js (free,
+            //    on-device, no API key, same engine already used by
+            //    the AI Prescription reader). Runs on the pre-processed
+            //    canvas, never the raw upload. Returns null (never a
+            //    guess) if Tesseract's own confidence score is below
+            //    OCR_CONFIDENCE_THRESHOLD or if no text was found —
+            //    the caller must treat null as "abort, show alert."
             // ---------------------------------------------------------
-            async function runOCR(blob) {
-                const result = await Tesseract.recognize(blob, "eng+hin", {
+            async function runOCR(canvas) {
+                const result = await Tesseract.recognize(canvas, "eng+hin", {
                     logger: (m) => {
                         if (m.status === "recognizing text") {
                             scanProgress.textContent = "Reading text… " + Math.round(m.progress * 100) + "%";
@@ -334,11 +437,18 @@
                         }
                     }
                 });
-                return (result.data.text || "").trim();
+
+                const text = (result.data.text || "").trim();
+                const confidence = result.data.confidence || 0;
+
+                if (!text || confidence < OCR_CONFIDENCE_THRESHOLD) {
+                    return { ok: false, confidence };
+                }
+                return { ok: true, confidence, text };
             }
 
             // ---------------------------------------------------------
-            // 3. CANDIDATE EXTRACTION — turns raw OCR text into a
+            // 4. CANDIDATE EXTRACTION — turns raw OCR text into a
             //    ranked list of possible medicine names to look up.
             //    Full lines first (a medicine name is usually the
             //    biggest single line on a strip/box), then individual
@@ -364,12 +474,14 @@
             }
 
             // ---------------------------------------------------------
-            // 4. API HANDLING — reuses the EXACT same free, key-free
+            // 5. API HANDLING — reuses the EXACT same free, key-free
             //    data source as Drug Explorer: PharmaData.fetchDrugInfo()
             //    in pharma-data.js, which itself calls openFDA + RxNorm
             //    + MedlinePlus. No new API, no new key, nothing added
             //    to the project's config. Tries each OCR candidate in
-            //    turn until one resolves to a real medicine.
+            //    turn until one resolves to a real, verified medicine —
+            //    a database hit or nothing; never a partial/fuzzy guess
+            //    presented as fact.
             // ---------------------------------------------------------
             async function findMedicineFromOCR(ocrText) {
                 const candidates = extractCandidates(ocrText);
@@ -390,7 +502,7 @@
             }
 
             // ---------------------------------------------------------
-            // 5. STRICT OUTPUT — renders ONLY Uses, Doses, Side
+            // 6. STRICT OUTPUT — renders ONLY Uses, Doses, Side
             //    Effects. No warnings, interactions, chemistry,
             //    manufacturer, or source links. This is enforced by
             //    code (this function only ever builds 3 blocks), so
@@ -429,39 +541,46 @@
             }
 
             scanBtn.addEventListener("click", async function () {
-                if (!compressedBlob) return;
+                if (!ocrReadyCanvas) return;
 
                 scanBtn.style.display = "none";
                 loader.style.display = "block";
                 resultBox.style.display = "none";
+                hideAlert();
                 scanProgress.textContent = "Reading text…";
 
                 try {
-                    const ocrText = await runOCR(compressedBlob);
+                    const ocr = await runOCR(ocrReadyCanvas);
 
-                    if (!ocrText) {
+                    // ---- ZERO-HALLUCINATION GATE ----
+                    // Below-threshold confidence (or no text at all) means
+                    // the scan is aborted right here. No candidate is
+                    // extracted, no lookup is attempted, nothing is guessed.
+                    if (!ocr.ok) {
                         loader.style.display = "none";
                         scanBtn.style.display = "flex";
-                        resultBox.innerHTML = `<span class="error-text">⚠️ No readable text found.</span> Try a sharper, well-lit photo with the medicine name clearly visible.`;
-                        resultBox.style.display = "block";
+                        console.warn(`OCR confidence ${Math.round(ocr.confidence)}% — below ${OCR_CONFIDENCE_THRESHOLD}% threshold, aborting.`);
+                        showAlert(LOW_CONFIDENCE_MESSAGE);
                         return;
                     }
 
                     scanProgress.textContent = "Looking up medicine data…";
-                    const info = await findMedicineFromOCR(ocrText);
+                    const info = await findMedicineFromOCR(ocr.text);
 
                     loader.style.display = "none";
                     scanBtn.style.display = "flex";
 
                     if (info) {
                         resultBox.innerHTML = renderStrict3(info);
+                        resultBox.style.display = "block";
                     } else {
-                        resultBox.innerHTML = `
-                            <span class="error-text">⚠️ Could not identify this medicine.</span>
-                            The text found doesn't match a known medicine name.<br>
-                            <a class="rescan-btn" href="pharmarag.html">Try searching it manually in Drug Explorer →</a>`;
+                        // Text was read with acceptable confidence, but nothing it
+                        // contains matches a known medicine in the database.
+                        // This is NOT a lighting/blur problem, so it gets its own
+                        // honest message — but still the alert box, never a
+                        // fabricated Uses/Doses/Side-Effects result.
+                        showAlert("Text was readable, but it didn't match any known medicine in the database. Try a clearer photo of the name, or search for it manually in Drug Explorer.");
                     }
-                    resultBox.style.display = "block";
 
                 } catch (error) {
                     console.error("Scan error:", error);
