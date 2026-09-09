@@ -200,13 +200,9 @@
         .slide.active { display: flex; animation: slideFadeIn 0.6s ease; }
         @keyframes slideFadeIn { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
 
-        .slide-bg-1 { background: linear-gradient(135deg, #0A1330 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(76,141,255,0.35), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
-        .slide-bg-2 { background: linear-gradient(135deg, #071A1E 0%, #04060C 60%), radial-gradient(circle at 85% 25%, rgba(34,211,238,0.30), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
-        .slide-bg-3 { background: linear-gradient(135deg, #1A0F2E 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(167,139,250,0.30), transparent 55%); background-size: 140% 140%; animation: bgDrift 14s ease-in-out infinite; }
-        @keyframes bgDrift {
-            0%, 100% { background-position: 0% 0%, 80% 20%; }
-            50%      { background-position: 10% 10%, 60% 35%; }
-        }
+        .slide-bg-1 { background: linear-gradient(135deg, #0A1330 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(76,141,255,0.35), transparent 55%); }
+        .slide-bg-2 { background: linear-gradient(135deg, #071A1E 0%, #04060C 60%), radial-gradient(circle at 85% 25%, rgba(34,211,238,0.30), transparent 55%); }
+        .slide-bg-3 { background: linear-gradient(135deg, #1A0F2E 0%, #04060C 60%), radial-gradient(circle at 80% 20%, rgba(167,139,250,0.30), transparent 55%); }
 
         .slide-orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; z-index: 0; }
         .slide-orb-1 { width: 220px; height: 220px; top: -60px; right: 40px; background: var(--blue); animation: floatOrb1 9s ease-in-out infinite; }
@@ -677,6 +673,23 @@
                         el.innerHTML = `${prefix}, <span>${name}</span>`;
                     }
                 }, 45);
+            }
+
+            // ===== "Welcome" email — sent every time a user logs in =====
+            async function sendLoginEmail(user) {
+                if (!user || !user.email) return;
+                if (typeof emailjs === "undefined") { console.warn("EmailJS SDK not loaded."); return; }
+                if (EMAILJS_PUBLIC_KEY.indexOf("PASTE_") === 0) return; // not configured yet
+
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                        to_email: user.email,
+                        to_name: (user.displayName || "there").split(" ")[0],
+                        from_name: "Developer Team, PharmaAI Hub by Athrav"
+                    });
+                } catch (error) {
+                    console.error("Login email failed:", error);
+                }
             }
 
             onAuthStateChanged(auth, async (user) => {
