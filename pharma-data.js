@@ -638,5 +638,17 @@ const PharmaData = (function () {
         return null;
     }
 
-    return { fetchDrugInfo, translateToHindi };
+    // Flat, deduplicated list of every brand/generic name this app already
+    // knows about (both the synonym keys and their canonical targets).
+    // Used by the Medicine Scanner for dictionary/keyword matching against
+    // raw OCR text — a real "does this exact text mention a known
+    // medicine" check, not a guess.
+    function getKnownMedicineNames() {
+        const all = new Set();
+        Object.keys(NAME_SYNONYMS).forEach((k) => { all.add(k); all.add(NAME_SYNONYMS[k]); });
+        Object.keys(BRAND_SYNONYMS).forEach((k) => { all.add(k); all.add(BRAND_SYNONYMS[k]); });
+        return Array.from(all);
+    }
+
+    return { fetchDrugInfo, translateToHindi, getKnownMedicineNames };
 })();
