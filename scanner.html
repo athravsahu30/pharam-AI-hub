@@ -138,8 +138,8 @@
             <div class="nav-label">MAIN MENU</div>
             <a href="index.html" class="nav-item"><span class="nav-icon">📊</span> Home</a>
             <a href="pharmarag.html" class="nav-item"><span class="nav-icon">💊</span> Drug Explorer</a>
+            <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
             <a href="#" class="nav-item active"><span class="nav-icon">📷</span> Medicine Scanner</a>
-             <a href="chat.html" class="nav-item"><span class="nav-icon">📄</span> AI Prescription</a>
             <a href="admin.html" class="nav-item" id="adminNavLink" style="display:none;"><span class="nav-icon">🛡️</span> Admin</a>
         </nav>
     </aside>
@@ -265,13 +265,48 @@
             const scanAlertText = document.getElementById("scanAlertText");
 
             // ---------------------------------------------------------
-            // ZERO-HALLUCINATION CONFIG
-            // Below this OCR confidence score, the scan is aborted —
-            // no lookup is attempted, no name is guessed. Raise to 90
-            // for an even stricter gate.
+            // SMART MATCHING CONFIG
+            // A strict confidence-only gate rejected clear photos (e.g.
+            // screen photos with moiré patterns dragging down Tesseract's
+            // overall score even though the medicine name itself was
+            // perfectly readable). Two checks now run together:
+            //   1. Dictionary match — does the raw OCR text contain a
+            //      known medicine name verbatim, anywhere? If yes, that's
+            //      treated as a real success regardless of the overall
+            //      confidence score.
+            //   2. Confidence fallback — only used when no known name was
+            //      found in the text at all.
+            // The alert only fires when BOTH fail: no dictionary hit AND
+            // confidence below threshold.
             // ---------------------------------------------------------
-            const OCR_CONFIDENCE_THRESHOLD = 85;
+            const OCR_CONFIDENCE_THRESHOLD = 70;
             const LOW_CONFIDENCE_MESSAGE = "Medicine name not clear. Please capture the photo again. Ensure there is proper lighting, the image is not blurry, and the camera is steady.";
+
+            let knownMedicineNames = null; // lazy-loaded, longest-first, from PharmaData's real synonym maps
+
+            function escapeRegex(s) {
+                return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            }
+
+            // Returns the matched known name (lowercase) if the OCR text
+            // contains it as a whole word/phrase, else null. Longest names
+            // are checked first so e.g. "diclofenac sodium" is preferred
+            // over the shorter "diclofenac" when both would match.
+            function findKnownMedicineInText(rawText) {
+                if (!rawText) return null;
+                if (!knownMedicineNames) {
+                    knownMedicineNames = (typeof PharmaData !== "undefined" && PharmaData.getKnownMedicineNames)
+                        ? PharmaData.getKnownMedicineNames().sort((a, b) => b.length - a.length)
+                        : [];
+                }
+                const haystack = rawText.toLowerCase();
+                for (const name of knownMedicineNames) {
+                    if (!name || name.length < 4) continue; // skip too-short names to avoid noisy false positives
+                    const pattern = new RegExp("\\b" + escapeRegex(name) + "\\b", "i");
+                    if (pattern.test(haystack)) return name;
+                }
+                return null;
+            }
 
             let compressedBlob = null; // output of step 1 (compression)
             let ocrReadyCanvas = null; // output of step 2 (preprocessing) — what Tesseract actually reads
@@ -434,13 +469,12 @@
             });
 
             // ---------------------------------------------------------
-            // 3. OCR + STRICT CONFIDENCE GATE — Tesseract.js (free,
-            //    on-device, no API key, same engine already used by
-            //    the AI Prescription reader). Runs on the pre-processed
-            //    canvas, never the raw upload. Returns null (never a
-            //    guess) if Tesseract's own confidence score is below
-            //    OCR_CONFIDENCE_THRESHOLD or if no text was found —
-            //    the caller must treat null as "abort, show alert."
+            // 3. OCR — Tesseract.js (free, on-device, no API key, same
+            //    engine already used by the AI Prescription reader).
+            //    Runs on the pre-processed canvas, never the raw upload.
+            //    Just returns the raw reading; the accept/reject decision
+            //    (confidence + dictionary match together) happens in the
+            //    click handler below.
             // ---------------------------------------------------------
             async function runOCR(canvas) {
                 const result = await Tesseract.recognize(canvas, "eng+hin", {
@@ -452,14 +486,10 @@
                         }
                     }
                 });
-
-                const text = (result.data.text || "").trim();
-                const confidence = result.data.confidence || 0;
-
-                if (!text || confidence < OCR_CONFIDENCE_THRESHOLD) {
-                    return { ok: false, confidence };
-                }
-                return { ok: true, confidence, text };
+                return {
+                    text: (result.data.text || "").trim(),
+                    confidence: result.data.confidence || 0
+                };
             }
 
             // ---------------------------------------------------------
@@ -498,9 +528,13 @@
             //    a database hit or nothing; never a partial/fuzzy guess
             //    presented as fact.
             // ---------------------------------------------------------
-            async function findMedicineFromOCR(ocrText) {
+            async function findMedicineFromOCR(ocrText, priorityCandidate) {
                 const candidates = extractCandidates(ocrText);
-                for (const candidate of candidates) {
+                const ordered = priorityCandidate
+                    ? [priorityCandidate, ...candidates.filter((c) => c.toLowerCase() !== priorityCandidate.toLowerCase())]
+                    : candidates;
+
+                for (const candidate of ordered) {
                     scanProgress.textContent = `Checking "${candidate}"…`;
                     const info = await PharmaData.fetchDrugInfo(candidate);
                     if (info) return info;
@@ -593,22 +627,29 @@
 
                 try {
                     const ocr = await runOCR(ocrReadyCanvas);
+                    const dictMatch = findKnownMedicineInText(ocr.text);
 
-                    // ---- ZERO-HALLUCINATION GATE ----
-                    // Below-threshold confidence (or no text at all) means
-                    // the scan is aborted right here. No candidate is
-                    // extracted, no lookup is attempted, nothing is guessed.
-                    if (!ocr.ok) {
+                    // ---- SMART MATCHING DECISION ----
+                    // A known medicine name found verbatim in the text is
+                    // accepted regardless of overall confidence (moiré,
+                    // background clutter, etc. can drag the score down
+                    // without the name itself being unclear). Only when
+                    // NO known name is found do we fall back to the raw
+                    // confidence score — and only reject if that's also
+                    // too low.
+                    const passed = !!dictMatch || (ocr.text && ocr.confidence >= OCR_CONFIDENCE_THRESHOLD);
+
+                    if (!passed) {
                         loader.style.display = "none";
                         scanBtn.style.display = "flex";
-                        console.warn(`OCR confidence ${Math.round(ocr.confidence)}% — below ${OCR_CONFIDENCE_THRESHOLD}% threshold, aborting.`);
+                        console.warn(`No known medicine found in text, and confidence ${Math.round(ocr.confidence)}% is below ${OCR_CONFIDENCE_THRESHOLD}% threshold — aborting.`);
                         showAlert(LOW_CONFIDENCE_MESSAGE);
                         setScanBtnMode("retake");
                         return;
                     }
 
                     scanProgress.textContent = "Looking up medicine data…";
-                    const info = await findMedicineFromOCR(ocr.text);
+                    const info = await findMedicineFromOCR(ocr.text, dictMatch);
 
                     loader.style.display = "none";
                     scanBtn.style.display = "flex";
@@ -617,11 +658,9 @@
                         resultBox.innerHTML = renderStrict3(info);
                         resultBox.style.display = "block";
                     } else {
-                        // Text was read with acceptable confidence, but nothing it
-                        // contains matches a known medicine in the database.
-                        // This is NOT a lighting/blur problem, so it gets its own
-                        // honest message — but still the alert box, never a
-                        // fabricated Uses/Doses/Side-Effects result.
+                        // Text was read (confidently, or via a dictionary hit), but
+                        // nothing resolved to an actual database entry. Still not
+                        // a guess: show the alert rather than inventing one.
                         showAlert("Text was readable, but it didn't match any known medicine in the database. Try a clearer photo of the name, or search for it manually in Drug Explorer.");
                         setScanBtnMode("retake");
                     }
