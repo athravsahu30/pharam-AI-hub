@@ -292,6 +292,96 @@
             // contains it as a whole word/phrase, else null. Longest names
             // are checked first so e.g. "diclofenac sodium" is preferred
             // over the shorter "diclofenac" when both would match.
+            // ---------------------------------------------------------
+            // FUZZY MATCHING (Levenshtein distance) — silver foil blister
+            // packs cause glare-driven misreads like "Disprin" ->
+            // "D1spr!n" or "Disprn". Exact substring matching (above)
+            // won't catch these; this compares each OCR word against the
+            // known-medicine dictionary and accepts anything within
+            // FUZZY_MATCH_THRESHOLD similarity.
+            // ---------------------------------------------------------
+            const FUZZY_MATCH_THRESHOLD = 0.8; // 80% similarity
+
+            function levenshteinDistance(a, b) {
+                const m = a.length, n = b.length;
+                if (m === 0) return n;
+                if (n === 0) return m;
+
+                let prevRow = new Array(n + 1);
+                let currRow = new Array(n + 1);
+                for (let j = 0; j <= n; j++) prevRow[j] = j;
+
+                for (let i = 1; i <= m; i++) {
+                    currRow[0] = i;
+                    for (let j = 1; j <= n; j++) {
+                        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                        currRow[j] = Math.min(
+                            prevRow[j] + 1,     // deletion
+                            currRow[j - 1] + 1, // insertion
+                            prevRow[j - 1] + cost // substitution
+                        );
+                    }
+                    [prevRow, currRow] = [currRow, prevRow];
+                }
+                return prevRow[n];
+            }
+
+            function similarityScore(a, b) {
+                const maxLen = Math.max(a.length, b.length);
+                if (maxLen === 0) return 1;
+                return 1 - levenshteinDistance(a, b) / maxLen;
+            }
+
+            // Maps common OCR misreads of letters (digits/symbols that look
+            // similar to the letter under foil glare/low contrast) back to
+            // their likely letter before distance is computed — this is
+            // what lets "D1spr!n" line up with "disprin" in the first place.
+            function normalizeOCRNoise(word) {
+                return word
+                    .toLowerCase()
+                    .replace(/0/g, "o")
+                    .replace(/1/g, "i")
+                    .replace(/[!|]/g, "i")
+                    .replace(/5/g, "s")
+                    .replace(/3/g, "e")
+                    .replace(/8/g, "b")
+                    .replace(/\$/g, "s")
+                    .replace(/@/g, "a")
+                    .replace(/[^a-z]/g, ""); // strip anything left that isn't a letter
+            }
+
+            // Scans individual OCR words against the dictionary and returns
+            // the best match at/above FUZZY_MATCH_THRESHOLD, or null.
+            function findFuzzyMedicineMatch(rawText) {
+                if (!rawText) return null;
+                if (!knownMedicineNames) {
+                    knownMedicineNames = (typeof PharmaData !== "undefined" && PharmaData.getKnownMedicineNames)
+                        ? PharmaData.getKnownMedicineNames().sort((a, b) => b.length - a.length)
+                        : [];
+                }
+
+                const words = rawText.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 4);
+                let best = null;
+
+                for (const rawWord of words) {
+                    const normWord = normalizeOCRNoise(rawWord);
+                    if (normWord.length < 4) continue;
+
+                    for (const name of knownMedicineNames) {
+                        if (!name || name.length < 4) continue;
+                        // Cheap length pre-filter — skip pairs too different in
+                        // length to plausibly hit 80% similarity, keeps this fast.
+                        if (Math.abs(name.length - normWord.length) > Math.ceil(name.length * 0.4)) continue;
+
+                        const score = similarityScore(normWord, name);
+                        if (score >= FUZZY_MATCH_THRESHOLD && (!best || score > best.score)) {
+                            best = { name, score };
+                        }
+                    }
+                }
+                return best ? best.name : null;
+            }
+
             function findKnownMedicineInText(rawText) {
                 if (!rawText) return null;
                 if (!knownMedicineNames) {
@@ -391,17 +481,24 @@
             // 2. OCR PRE-PROCESSING (Canvas) — CRITICAL for accuracy.
             //    Blister packs glare, syrup bottles are curved, and
             //    printed fonts are tiny — feeding the raw photo to OCR
-            //    guarantees misreads. Three steps, in order:
-            //      a) Upsampling  — scale ~1.6x so small print crosses
-            //                       the ~20-30px tall "sweet spot" OCR
-            //                       engines read best.
-            //      b) Grayscale   — drop color noise, keep only light
-            //                       intensity.
-            //      c) Binarization — force every pixel to pure black or
-            //                       pure white, wiping out glare/shadow
-            //                       so only crisp text remains.
+            //    guarantees misreads. Silver foil in particular produces
+            //    washed-out, low-contrast grays (not clean black ink on
+            //    white), so a contrast boost is applied before
+            //    binarization to sharpen that ink/foil boundary. Four
+            //    steps, in order:
+            //      a) Upsampling    — scale ~1.6x so small print crosses
+            //                         the ~20-30px tall "sweet spot" OCR
+            //                         engines read best.
+            //      b) Grayscale     — drop color noise, keep only light
+            //                         intensity.
+            //      c) Contrast boost — stretch values away from mid-gray,
+            //                         which is what foil glare compresses
+            //                         everything toward.
+            //      d) Binarization  — force every pixel to pure black or
+            //                         pure white, wiping out glare/shadow
+            //                         so only crisp text remains.
             // ---------------------------------------------------------
-            function preprocessForOCR(sourceCanvas, scaleFactor = 1.6) {
+            function preprocessForOCR(sourceCanvas, scaleFactor = 1.6, contrastFactor = 1.6) {
                 const upCanvas = document.createElement("canvas");
                 upCanvas.width = Math.round(sourceCanvas.width * scaleFactor);
                 upCanvas.height = Math.round(sourceCanvas.height * scaleFactor);
@@ -421,10 +518,22 @@
                     data[i] = data[i + 1] = data[i + 2] = gray;
                 }
 
-                // (c) Binarization — global threshold set from the image's own
-                //     mean brightness, biased slightly dark so glare (very
-                //     bright pixels) reliably lands on the white side and
-                //     printed strokes reliably land on the black side.
+                // (c) Contrast boost — linear stretch around mid-gray (128).
+                //     Foil glare compresses ink and background into a
+                //     narrow, washed-out gray band; pushing values away
+                //     from the midpoint pulls that band back apart into
+                //     something binarization can cleanly split.
+                for (let i = 0; i < data.length; i += 4) {
+                    const boosted = (data[i] - 128) * contrastFactor + 128;
+                    const clamped = boosted < 0 ? 0 : (boosted > 255 ? 255 : boosted);
+                    data[i] = data[i + 1] = data[i + 2] = clamped;
+                }
+
+                // (d) Binarization — global threshold set from the (now
+                //     contrast-boosted) image's own mean brightness, biased
+                //     slightly dark so glare (very bright pixels) reliably
+                //     lands on the white side and printed strokes reliably
+                //     land on the black side.
                 let sum = 0;
                 for (let i = 0; i < data.length; i += 4) sum += data[i];
                 const mean = sum / (data.length / 4);
@@ -628,28 +737,29 @@
                 try {
                     const ocr = await runOCR(ocrReadyCanvas);
                     const dictMatch = findKnownMedicineInText(ocr.text);
+                    const fuzzyMatch = dictMatch ? null : findFuzzyMedicineMatch(ocr.text);
+                    const matchedName = dictMatch || fuzzyMatch;
 
                     // ---- SMART MATCHING DECISION ----
-                    // A known medicine name found verbatim in the text is
-                    // accepted regardless of overall confidence (moiré,
-                    // background clutter, etc. can drag the score down
-                    // without the name itself being unclear). Only when
-                    // NO known name is found do we fall back to the raw
-                    // confidence score — and only reject if that's also
-                    // too low.
-                    const passed = !!dictMatch || (ocr.text && ocr.confidence >= OCR_CONFIDENCE_THRESHOLD);
+                    // A known medicine name found in the text — exactly, or
+                    // within FUZZY_MATCH_THRESHOLD similarity (handles foil-
+                    // glare misreads like "D1spr!n") — is accepted regardless
+                    // of overall confidence. Only when NEITHER finds anything
+                    // do we fall back to the raw confidence score, and only
+                    // reject if that's also too low.
+                    const passed = !!matchedName || (ocr.text && ocr.confidence >= OCR_CONFIDENCE_THRESHOLD);
 
                     if (!passed) {
                         loader.style.display = "none";
                         scanBtn.style.display = "flex";
-                        console.warn(`No known medicine found in text, and confidence ${Math.round(ocr.confidence)}% is below ${OCR_CONFIDENCE_THRESHOLD}% threshold — aborting.`);
+                        console.warn(`No known medicine found (exact or fuzzy) in text, and confidence ${Math.round(ocr.confidence)}% is below ${OCR_CONFIDENCE_THRESHOLD}% threshold — aborting.`);
                         showAlert(LOW_CONFIDENCE_MESSAGE);
                         setScanBtnMode("retake");
                         return;
                     }
 
                     scanProgress.textContent = "Looking up medicine data…";
-                    const info = await findMedicineFromOCR(ocr.text, dictMatch);
+                    const info = await findMedicineFromOCR(ocr.text, matchedName);
 
                     loader.style.display = "none";
                     scanBtn.style.display = "flex";
