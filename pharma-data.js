@@ -34,7 +34,7 @@ const PharmaData = (function () {
 
     // Wraps fetch with a hard timeout — a slow/unreachable source
     // will fail gracefully instead of hanging the whole search.
-    async function fetchWithTimeout(url, ms = 6000) {
+    async function fetchWithTimeout(url, ms = 4500) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), ms);
         try {
@@ -177,7 +177,7 @@ const PharmaData = (function () {
             .replace(/[^a-z0-9\s]/g, " ")
             .replace(/\b\d+(\.\d+)?\s?(mg|mcg|ml|g|iu)?\b/g, " ")
             .replace(/\b(tablet|tablets|tab|tabs|capsule|capsules|cap|caps|syrup|injection|inj|drops|cream|ointment|gel|solution|suspension|sachet)\b/g, " ")
-            .replace(/\b(sr|er|xl|xr|od|cr|dt|ds|mr|la|cd|rd|pd|plus|forte)\b/g, " ")
+            .replace(/\b(sr|er|xl|xr|od|cr|dt|ds|mr|la|cd|rd|pd|sp|lc|af|dsr|gold|advance|plus|forte)\b/g, " ")
             .replace(/\s+/g, " ")
             .trim();
     }
@@ -212,7 +212,7 @@ const PharmaData = (function () {
     async function tryPubChem(name) {
         try {
             const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(name)}/property/MolecularFormula,MolecularWeight,IUPACName/JSON`;
-            const res = await fetchWithTimeout(url);
+            const res = await fetchWithTimeout(url, 3500);
             if (!res.ok) return null;
             const json = await res.json();
             const props = json.PropertyTable && json.PropertyTable.Properties && json.PropertyTable.Properties[0];
@@ -231,7 +231,7 @@ const PharmaData = (function () {
     async function tryClinicalTrials(name) {
         try {
             const url = `https://clinicaltrials.gov/api/v2/studies?query.term=${encodeURIComponent(name)}&pageSize=3&fields=NCTId,BriefTitle,OverallStatus`;
-            const res = await fetchWithTimeout(url);
+            const res = await fetchWithTimeout(url, 3500);
             if (!res.ok) return null;
             const json = await res.json();
             const studies = json.studies;
@@ -315,14 +315,14 @@ const PharmaData = (function () {
     async function tryPubMed(name) {
         try {
             const searchUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmode=json&retmax=3&term=${encodeURIComponent(name)}`;
-            const searchRes = await fetchWithTimeout(searchUrl);
+            const searchRes = await fetchWithTimeout(searchUrl, 3500);
             if (!searchRes.ok) return null;
             const searchJson = await searchRes.json();
             const ids = searchJson.esearchresult && searchJson.esearchresult.idlist;
             if (!ids || !ids.length) return null;
 
             const summaryUrl = `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=${ids.join(",")}`;
-            const summaryRes = await fetchWithTimeout(summaryUrl);
+            const summaryRes = await fetchWithTimeout(summaryUrl, 3500);
             if (!summaryRes.ok) return null;
             const summaryJson = await summaryRes.json();
 
@@ -348,7 +348,7 @@ const PharmaData = (function () {
 
         try {
             const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=hi&dt=t&q=${encodeURIComponent(trimmed)}`;
-            const res = await fetchWithTimeout(url);
+            const res = await fetchWithTimeout(url, 3000);
             if (res.ok) {
                 const json = await res.json();
                 const translated = json && json[0] ? json[0].map(chunk => chunk[0]).join("") : null;
@@ -358,7 +358,7 @@ const PharmaData = (function () {
 
         try {
             const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(trimmed)}&langpair=en|hi`;
-            const res = await fetchWithTimeout(url);
+            const res = await fetchWithTimeout(url, 3000);
             if (res.ok) {
                 const json = await res.json();
                 return (json.responseData && json.responseData.translatedText) || null;
@@ -427,7 +427,32 @@ const PharmaData = (function () {
         "diphenhydramine hydrochloride": "diphenhydramine",
         "mefenamic acid": "mefenamic acid",
         "aceclofenac": "aceclofenac",
-        "clavulanic acid": "clavulanate"
+        "clavulanic acid": "clavulanate",
+        "rabeprazole sodium": "rabeprazole",
+        "domperidone maleate": "domperidone",
+        "montelukast sodium": "montelukast",
+        "levocetirizine dihydrochloride": "levocetirizine",
+        "fexofenadine hydrochloride": "fexofenadine",
+        "hydroxyzine hydrochloride": "hydroxyzine",
+        "betahistine dihydrochloride": "betahistine",
+        "chlorpheniramine maleate": "chlorpheniramine",
+        "bisoprolol fumarate": "bisoprolol",
+        "sitagliptin phosphate": "sitagliptin",
+        "empagliflozin": "empagliflozin",
+        "glimepiride": "glimepiride",
+        "cefixime trihydrate": "cefixime",
+        "ceftriaxone sodium": "ceftriaxone",
+        "doxycycline hyclate": "doxycycline",
+        "levofloxacin hemihydrate": "levofloxacin",
+        "roxithromycin": "roxithromycin",
+        "budesonide": "budesonide",
+        "fluticasone propionate": "fluticasone",
+        "cholecalciferol": "cholecalciferol",
+        "alprazolam": "alprazolam",
+        "clotrimazole": "clotrimazole",
+        "betamethasone valerate": "betamethasone",
+        "ketorolac tromethamine": "ketorolac",
+        "metoclopramide hydrochloride": "metoclopramide"
     };
 
     // Common Indian/international BRAND names mapped to their primary
@@ -524,7 +549,77 @@ const PharmaData = (function () {
         "stemetil": "prochlorperazine",
         "emeset": "ondansetron",
         "ondem": "ondansetron",
-        "pcm": "paracetamol"
+        "pcm": "paracetamol",
+
+        // --- Expanded Indian brand-name coverage ---
+        // Painkillers / fever
+        "metacin": "paracetamol",
+        "fepanil": "paracetamol",
+        "pacimol": "paracetamol",
+        "saridon": "paracetamol",
+        "ibugesic": "ibuprofen",
+        "ketorol": "ketorolac",
+        "perinorm": "metoclopramide",
+
+        // Antibiotics
+        "novamox": "amoxicillin",
+        "mox": "amoxicillin",
+        "clavam": "amoxicillin",
+        "azax": "azithromycin",
+        "taxim": "cefixime",
+        "cefspan": "cefixime",
+        "zifi": "cefixime",
+        "monocef": "ceftriaxone",
+        "doxy": "doxycycline",
+        "doxt": "doxycycline",
+        "levoflox": "levofloxacin",
+        "glevo": "levofloxacin",
+        "roxid": "roxithromycin",
+
+        // PPIs / antacids / GI
+        "rablet": "rabeprazole",
+        "razo": "rabeprazole",
+        "nexpro": "esomeprazole",
+        "esoz": "esomeprazole",
+        "gaviscon": "alginic acid",
+        "eno": "sodium bicarbonate",
+        "domstal": "domperidone",
+        "vomistop": "domperidone",
+
+        // Allergy / respiratory
+        "atarax": "hydroxyzine",
+        "montek": "montelukast",
+        "montair": "montelukast",
+        "foracort": "budesonide",
+        "budecort": "budesonide",
+        "seroflo": "fluticasone",
+        "ascoril": "bromhexine",
+
+        // Diabetes
+        "glimestar": "glimepiride",
+        "januvia": "sitagliptin",
+        "galvus": "vildagliptin",
+        "jardiance": "empagliflozin",
+
+        // Cardiac / BP / cholesterol
+        "concor": "bisoprolol",
+        "metolar": "metoprolol",
+        "betaloc": "metoprolol",
+
+        // Vitamins / supplements
+        "shelcal": "calcium carbonate",
+        "calcirol": "cholecalciferol",
+        "neurobion": "cyanocobalamin",
+        "becosules": "ascorbic acid",
+
+        // Mental health / sedatives
+        "alprax": "alprazolam",
+        "restyl": "alprazolam",
+
+        // Skin
+        "betnovate": "betamethasone",
+        "candid": "clotrimazole",
+        "quadriderm": "betamethasone"
     };
 
     /**
@@ -584,15 +679,21 @@ const PharmaData = (function () {
             }
         }
 
-        // 2. Direct openFDA (covers US generic names and US brand names)
-        const direct = await tryOpenFDA(name);
+        // 2 & 3. Direct openFDA lookup AND RxNorm normalization fired in
+        // PARALLEL — these are independent network calls, so there's no
+        // reason to wait for openFDA to fail before starting RxNorm. This
+        // alone cuts a full sequential round-trip off every search that
+        // doesn't resolve via the local brand/synonym maps.
+        const [direct, rx] = await Promise.all([
+            tryOpenFDA(name),
+            rxNormalize(name)
+        ]);
+
         if (direct) {
             const extras = await fetchExtras(name);
             return { source: 'openfda', name, fda: direct, medline: null, extras };
         }
 
-        // 3. Normalize via RxNorm, retry openFDA with generic name
-        const rx = await rxNormalize(name);
         if (rx && rx.genericName) {
             const retry = await tryOpenFDA(rx.genericName.toLowerCase());
             if (retry) {
