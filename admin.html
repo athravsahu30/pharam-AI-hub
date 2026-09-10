@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PharmaAI Hub - Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <style>
         :root {
           --bg: #04060C; --bg-panel: #0A0D16;
@@ -44,6 +45,18 @@
         .state-box { text-align: center; padding: 60px 20px; color: var(--ink-soft); }
         .state-box .icon { font-size: 36px; margin-bottom: 12px; }
         .login-btn { background: linear-gradient(135deg, var(--blue), var(--cyan)); color: #04060C; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; border: none; cursor: pointer; margin-top: 14px; }
+        .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ===== Notify-all-users panel ===== */
+        .notify-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; margin-top: 24px; }
+        .notify-card h2 { font-size: 18px; }
+        .field label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+        .field input, .field textarea {
+            width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--card-border);
+            background: rgba(255,255,255,0.03); color: var(--ink); font-family: inherit; font-size: 14px; resize: vertical;
+        }
+        .field input:focus, .field textarea:focus { outline: none; border-color: var(--card-border-strong); }
+        #sendStatus { font-size: 13px; color: var(--ink-soft); min-height: 16px; }
     </style>
 </head>
 <body>
@@ -57,6 +70,23 @@
                 <div class="icon">🔒</div>
                 <p>Checking access…</p>
             </div>
+        </div>
+
+        <div class="notify-card" id="notifyWrap" style="display:none;">
+            <div>
+                <h2>📢 Notify All Users</h2>
+                <p class="sub" style="margin-bottom:0;">Jab bhi koi naya feature/update aaye (jaise Medicine Scanner), yahan se sabhi registered users ko ek email bhej do.</p>
+            </div>
+            <div class="field">
+                <label>Update Title</label>
+                <input id="updateTitle" type="text" placeholder="e.g. Medicine Scanner Launched!">
+            </div>
+            <div class="field">
+                <label>Message</label>
+                <textarea id="updateMessage" rows="4" placeholder="Ab aap medicine ki photo scan karke turant uski details, uses aur side effects jaan sakte hain. Try karo Scanner tab mein!"></textarea>
+            </div>
+            <button id="sendUpdateBtn" class="login-btn" style="align-self:flex-start;">📤 Send to All Users</button>
+            <div id="sendStatus"></div>
         </div>
     </div>
 
@@ -76,6 +106,14 @@
 
         // 🔑 TODO: apna Gmail yahan daalo — sirf yeh email admin dashboard dekh payega
         const ADMIN_EMAILS = ["athravsahu30@gmail.com"];
+
+        // ===== EmailJS Setup (same account/template used for the login-welcome email — free plan allows only 2 templates, so we reuse the same one) =====
+        const EMAILJS_PUBLIC_KEY = "2vpEuA7UrvwMoPFba";
+        const EMAILJS_SERVICE_ID = "service_eh9gma9";
+        const EMAILJS_UPDATE_TEMPLATE_ID = "template_prxf0zj"; // same template as the login-welcome email
+        if (typeof emailjs !== "undefined") emailjs.init(EMAILJS_PUBLIC_KEY);
+
+        let cachedUsers = []; // filled after users load, used by the "Notify All Users" button
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -126,6 +164,9 @@
                 const users = snapshot.docs.map(d => d.data())
                     .sort((a, b) => (b.lastLoginTimestamp || 0) - (a.lastLoginTimestamp || 0));
 
+                cachedUsers = users;
+                document.getElementById("notifyWrap").style.display = users.length ? "flex" : "none";
+
                 const statHtml = `
                     <div class="stat-row">
                         <div class="stat-card"><span>Total Registered Users</span><strong>${users.length}</strong></div>
@@ -154,16 +195,72 @@
                         <tbody>${rows}</tbody>
                     </table>`;
             } catch (err) {
+                document.getElementById("notifyWrap").style.display = "none";
                 content.innerHTML = `<div class="state-box"><div class="icon">❌</div><p>Users load nahi ho paaye: ${err.message}</p></div>`;
             }
         }
 
+        // ===== Send "new update" email to every registered user =====
+        document.getElementById("sendUpdateBtn").addEventListener("click", async () => {
+            const title = document.getElementById("updateTitle").value.trim();
+            const message = document.getElementById("updateMessage").value.trim();
+            const statusEl = document.getElementById("sendStatus");
+            const btn = document.getElementById("sendUpdateBtn");
+
+            if (!title || !message) {
+                alert("Update Title aur Message dono bharo.");
+                return;
+            }
+            if (typeof emailjs === "undefined") {
+                alert("EmailJS SDK load nahi hua. Internet connection check karein.");
+                return;
+            }
+
+            const recipients = cachedUsers.filter(u => u.email);
+            if (!recipients.length) {
+                alert("Koi registered user nahi mila.");
+                return;
+            }
+            if (!confirm(`"${title}" update ka email ${recipients.length} user(s) ko bheja jayega. Confirm?`)) return;
+
+            btn.disabled = true;
+            let sent = 0;
+            const failed = [];
+
+            for (let i = 0; i < recipients.length; i++) {
+                const u = recipients[i];
+                statusEl.textContent = `Sending ${i + 1}/${recipients.length}…`;
+                try {
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_UPDATE_TEMPLATE_ID, {
+                        to_email: u.email,
+                        to_name: (u.name || "there").split(" ")[0],
+                        subject_line: `🆕 ${title} — PharmaAI Hub Update`,
+                        message_body: message,
+                        from_name: "Developer Team, PharmaAI Hub by Athrav"
+                    });
+                    sent++;
+                } catch (err) {
+                    console.error("Update email failed for", u.email, err);
+                    failed.push(u.email);
+                }
+                // small delay between sends so EmailJS doesn't rate-limit/block the burst
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            btn.disabled = false;
+            statusEl.innerHTML = failed.length
+                ? `✅ Sent: ${sent} &nbsp;·&nbsp; ❌ Failed: ${failed.length} (${failed.join(", ")})`
+                : `✅ Sent to all ${sent} user(s) successfully!`;
+        });
+
         onAuthStateChanged(auth, (user) => {
             if (!user) {
+                document.getElementById("notifyWrap").style.display = "none";
                 renderLoginPrompt();
                 return;
             }
             if (!ADMIN_EMAILS.includes(user.email)) {
+                document.getElementById("notifyWrap").style.display = "none";
                 renderAccessDenied(user.email);
                 return;
             }
