@@ -57,13 +57,47 @@
         .login-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,211,238,0.3); }
 
         /* ===================== SCANNER UI ===================== */
-        .scanner-container { background: var(--card); border: 1px solid var(--card-border); padding: 35px; border-radius: 16px; width: 100%; max-width: 700px; margin: 0 auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; animation: fadeInUp 0.5s ease forwards; }
+        .scanner-container { background: var(--card); border: 1px solid var(--card-border); padding: 35px; border-radius: 16px; width: 100%; max-width: 700px; margin: 0 auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); opacity: 0; animation: fadeInUp 0.5s ease forwards; position: relative; overflow: hidden; z-index: 1; }
+
+        /* =========================================
+           Gemini-Style Animated Halftone Background
+           (same effect as Drug Explorer's search box,
+           but active as soon as this page loads)
+           ========================================= */
+        .scanner-container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(76,141,255,0.2), rgba(167,139,250,0.3), rgba(34,211,238,0.2), rgba(76,141,255,0.2));
+            background-size: 300% 300%;
+            z-index: -2;
+            opacity: 1;
+            animation: halftoneMove 6s ease infinite;
+        }
+        .scanner-container::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+            background-size: 8px 8px;
+            z-index: -1;
+            opacity: 1;
+            /* Radial mask makes it glow behind the scanner card */
+            -webkit-mask-image: radial-gradient(ellipse at 50% 85%, black 20%, transparent 70%);
+            mask-image: radial-gradient(ellipse at 50% 85%, black 20%, transparent 70%);
+        }
+        @keyframes halftoneMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         .scanner-header { margin-bottom: 25px; }
         .scanner-header h2 { font-size: 24px; color: var(--ink); margin-bottom: 8px; }
         .scanner-header p { font-size: 14px; color: var(--ink-soft); }
 
         .upload-area { border: 2px dashed var(--card-border-strong); border-radius: 12px; padding: 40px 20px; background: rgba(0,0,0,0.2); cursor: pointer; transition: 0.3s; position: relative; }
+        .fade-in-entry { animation: fadeInUp 0.5s ease; }
         .upload-area:hover { border-color: var(--cyan); background: rgba(76,141,255,0.05); }
         .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
         .upload-icon { font-size: 40px; margin-bottom: 10px; display: block; }
