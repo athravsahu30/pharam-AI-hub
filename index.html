@@ -686,6 +686,8 @@
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
                         to_email: user.email,
                         to_name: (user.displayName || "there").split(" ")[0],
+                        subject_line: "👋 Welcome to PharmaAI Hub!",
+                        message_body: "Thanks for logging in! Explore the Drug Explorer, PharmaRAG assistant, and our newest feature — the Medicine Scanner.",
                         from_name: "Developer Team, PharmaAI Hub by Athrav"
                     });
                 } catch (error) {
